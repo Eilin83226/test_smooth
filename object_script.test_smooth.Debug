@@ -1,0 +1,17 @@
+INPUT(
+./debug\main.o
+./debug\mainwindow.o
+./debug\load_video_info.o
+./debug\run_bacf.o
+./debug\bacf_optimized.o
+./debug\get_pixels.o
+./debug\mexresize.o
+./debug\get_features.o
+./debug\get_fhog.o
+./debug\gradientMex.o
+./debug\get_subwindow_no_window.o
+./debug\resizedft2.o
+./debug\resp_newton.o
+./debug\test.o
+./debug\moc_mainwindow.o
+);

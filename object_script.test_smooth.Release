@@ -1,0 +1,17 @@
+INPUT(
+./release\main.o
+./release\mainwindow.o
+./release\load_video_info.o
+./release\run_bacf.o
+./release\bacf_optimized.o
+./release\get_pixels.o
+./release\mexresize.o
+./release\get_features.o
+./release\get_fhog.o
+./release\gradientMex.o
+./release\get_subwindow_no_window.o
+./release\resizedft2.o
+./release\resp_newton.o
+./release\test.o
+./release\moc_mainwindow.o
+);
