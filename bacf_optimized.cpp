@@ -10,7 +10,7 @@ void BACF_optimized(parameters &params,track_result &results){
     vector <Mat> model_xf;
     int scale_ind;
     vector <Mat> g_f;
-    float old_pos[2];
+    //float old_pos[2];
 
     //%   Setting parameters for local use.
     double search_area_scale = params.search_area_scale;
@@ -28,15 +28,11 @@ void BACF_optimized(parameters &params,track_result &results){
     vector <string> s_frames = params.s_frame;
     //notice : end
     double pos[2];
-    cout<<"pos = "<<params.init_pos[0] <<","<<params.init_pos[1]<<endl;
     pos[0] = floor((params.init_pos[0] * height) / img_h);
     pos[1] = floor((params.init_pos[1] * width) / img_w);
-    cout<<"pos = "<<pos[0] <<","<<pos[1]<<endl;
     double target_sz[2];
-    cout<<"target_sz = "<<params.wsize[0] <<","<<params.wsize[1]<<endl;
     target_sz[0] = floor((params.wsize[0] * height) / img_h);
     target_sz[1] = floor((params.wsize[1] * width) / img_w);
-    cout<<"target_sz = "<<target_sz[0] <<","<<target_sz[1]<<endl;
 
 
     int visualization = params.visualization;
@@ -91,7 +87,7 @@ void BACF_optimized(parameters &params,track_result &results){
 
 
     //% window size, taking padding into account
-    vector <double> sz(2);
+    double sz[2];
     if(params.search_area_shape == "proportional") {
         //% proportional area, same aspect ratio as the target
         sz[0] = floor(base_target_sz[0] * search_area_scale);
@@ -122,11 +118,9 @@ void BACF_optimized(parameters &params,track_result &results){
 
 
 
-    //計算相關值
     //% construct the label function- correlation output, 2D gaussian function, with a peak located upon the target
     double output_sigma;
     output_sigma = sqrt(floor(base_target_sz[0]/featureRatio) * floor(base_target_sz[1]/featureRatio)) * output_sigma_factor;
-
     int dim_rg = ceil((use_sz[0]-1)/2.0) - (-floor((use_sz[0]-1)/2.0)) + 1;
     vector <int> rg(dim_rg , 0),temp_rg;
     for(int i = -floor((use_sz[0]-1)/2.0) ; i <= ceil((use_sz[0]-1)/2.0) ; ++i){
@@ -166,7 +160,6 @@ void BACF_optimized(parameters &params,track_result &results){
 
 
 
-
     int interp_sz[2];
     if(interpolate_response == 1){
         interp_sz[0] = use_sz[0] * featureRatio;
@@ -195,8 +188,16 @@ void BACF_optimized(parameters &params,track_result &results){
     //% Calculate feature dimension
     Mat im;
     try{
-        im = imread(video_path + "/img0/" + s_frames[0]);
-        resize(im,im,Size(width,height));
+        im = imread(video_path + "/test_426x240_bmp/" + s_frames[0],CV_LOAD_IMAGE_UNCHANGED);
+        //resize(im,im,Size(width,height));
+//        cout<<im.type()<<endl;
+//        cout<<(int)im.at<Vec3b>(55,8)[0]<<endl;
+//        cout<<(int)im.at<Vec3b>(55,8)[1]<<endl;
+//        cout<<(int)im.at<Vec3b>(55,8)[2]<<endl;
+//        cout<<im<<endl;
+
+//        imshow("im",im);
+//        waitKey(0);
     }
     catch(exception& e){
         try{
@@ -238,6 +239,7 @@ void BACF_optimized(parameters &params,track_result &results){
     else{
         colorImage = false;
     }
+
 
 
     //% compute feature dimensionality
@@ -328,29 +330,30 @@ void BACF_optimized(parameters &params,track_result &results){
     //% allocate memory for multi-scale tracking
     vector <Mat> multires_pixel_template(nScales);
 
-    vector <int> small_filter_sz(2);
+    int small_filter_sz[2];
     small_filter_sz[0] = floor(base_target_sz[0]/featureRatio);
     small_filter_sz[1] = floor(base_target_sz[1]/featureRatio);
 
 
 
-
+    //可delete
     double loop_frame = 1;
+
     int num_images = 1;
     for(int frame_num = 1 ; frame_num <= s_frames.size() ; ++frame_num){
         //%load image
         try{
-            im = imread(video_path + "/img0/" + s_frames[frame_num-1]);
-            resize(im,im,Size(width,height));
+            im = imread(video_path + "/test_426x240_bmp/" + s_frames[frame_num-1]);
+            //resize(im,im,Size(width,height));
         }
         catch(exception& e){
             try{
                 im = imread(s_frames[frame_num-1]);
-                resize(im,im,Size(width,height));
+                //resize(im,im,Size(width,height));
             }
             catch(exception& e){
                 im = imread(video_path + "/" + s_frames[frame_num-1]);
-                resize(im,im,Size(width,height));
+                //resize(im,im,Size(width,height));
             }
         }
         if(im.channels() > 1 && colorImage == false){
@@ -369,7 +372,7 @@ void BACF_optimized(parameters &params,track_result &results){
             for(scale_ind = 0 ; scale_ind < nScales ; ++scale_ind){
                 //--multires_pixel_template(:,:,:,scale_ind) = ...
                     //--get_pixels(im, pos, round(sz*currentScaleFactor*scaleFactors(scale_ind)), sz);
-                vector <double> sz_round(2);
+                double sz_round[2];
                 sz_round[0] = round(sz[0]*currentScaleFactor*scaleFactors[scale_ind]);
                 sz_round[1] = round(sz[1]*currentScaleFactor*scaleFactors[scale_ind]);
                 Mat get_pixels_img = get_pixels(im , pos , sz_round , sz);
@@ -380,34 +383,63 @@ void BACF_optimized(parameters &params,track_result &results){
 
             //--xtf = fft2(bsxfun(@times,get_features(multires_pixel_template,features,global_feat_params),cos_window));
             num_images = nScales;
-            vector <vector <Mat>> feature_pixels(num_images);
+            vector <vector <Mat>> feature_pixels(nScales);
             double support_sz[2];
 
-            get_features(multires_pixel_template,features,global_feat_params,num_images,feature_pixels,support_sz);
+            get_features(multires_pixel_template,features,global_feat_params,nScales,feature_pixels,support_sz);
 
 
-            vector <vector <Mat>> xtf(num_images);
-            vector <Mat> responsef;
-            for(int k = 0 ; k < num_images ; ++k){
-                Mat sum_temp = Mat::zeros(g_f.at(0).rows, g_f.at(0).cols, CV_32FC2);
-
+            vector<vector <Mat>> xtf_bsx_times(nScales);
+            for(int k = 0 ; k < nScales ; ++k){
+                //cout<<"before_bsx = "<<feature_pixels[k][0].at<float>(25,25)<<endl;
+                //cout<<"cos = "<<cos_window[25][25]<<endl;
                 for(int n = 0 ; n < feature_dim ; ++n){
-                    Mat mul_value;
+                    Mat mul_value = Mat::zeros(use_sz[0],use_sz[1],CV_32F);
+                    /*for(int i = 0 ; i < use_sz[0] ; ++i){
+                        for(int j = 0 ; j < use_sz[1] ; ++j){
+                            mul_value.at<float>(i,j) = feature_pixels[k][n].at<float>(i,j) * cos_window[i][j];
+                        }
+                    }*/
                     mul_value = feature_pixels[k].at(n).mul(cos_window);
+                    xtf_bsx_times[k].push_back(mul_value.clone());
+                }//cout<<"after_bsx = "<<xtf_bsx_times[k][0].at<float>(25,25)<<","<<feature_pixels[k][0].at<float>(25,25)*cos_window[25][25]<<endl;
+            }
 
-                    Mat xtf_temp;
-                    fft2(mul_value,xtf_temp);
+
+            vector <vector <Mat>> xtf(nScales);
+            //cout <<"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" << endl;
+            for(int k = 0 ; k < nScales ; ++k){
+                for(int n = 0 ; n < xtf_bsx_times[k].size() ; ++n){
+                    Mat xtf_temp = Mat::zeros(xtf_bsx_times[k][n].rows, xtf_bsx_times[k][n].cols, CV_32FC2);
+                    fft2(xtf_bsx_times[k][n],xtf_temp);
                     xtf[k].push_back(xtf_temp.clone());
-
-
-                    //--responsef = permute(sum(bsxfun(@times, conj(g_f), xtf), 3), [1 2 4 3]);
-                    Mat g_f_conj = QT_conj_m(g_f.at(n));
-                    Mat res_bsx_times = QT_M_mul_M(g_f_conj,xtf.at(k).at(n));
-
-                    sum_temp = sum_temp + res_bsx_times;
-
                 }
+            }
+            //cout << "**********************************" <<endl;
 
+            //--responsef = permute(sum(bsxfun(@times, conj(g_f), xtf), 3), [1 2 4 3]);
+            //bsxfun(@times, conj(g_f), xtf)
+            vector <vector <Mat>> res_bsx_times(nScales);
+            for(int k = 0 ; k < nScales ; ++k){
+                for(int n = 0 ; n < xtf[k].size() ; ++n){
+                    Mat mul_temp = Mat::zeros(xtf[k][n].rows, xtf[k][n].cols, CV_32FC2);
+                    for(int i = 0 ; i < xtf[k][n].rows ; ++i){
+                        for(int j = 0 ; j < xtf[k][n].cols ; ++j){
+                            mul_temp.at<Vec2f>(i,j)[0] = g_f.at(n).at<Vec2f>(i,j)[0] * xtf[k].at(n).at<Vec2f>(i,j)[0] + g_f.at(n).at<Vec2f>(i,j)[1] * xtf[k].at(n).at<Vec2f>(i,j)[1];
+                            mul_temp.at<Vec2f>(i,j)[1] = g_f.at(n).at<Vec2f>(i,j)[0] * xtf[k].at(n).at<Vec2f>(i,j)[1] - g_f.at(n).at<Vec2f>(i,j)[1] * xtf[k].at(n).at<Vec2f>(i,j)[0];
+                        }
+                    }
+                    res_bsx_times[k].push_back(mul_temp.clone());
+                }
+            }
+
+            //permute(sum(bsxfun(@times, conj(g_f), xtf), 3), [1 2 4 3])
+            vector <Mat> responsef;
+            for(int k = 0 ; k < nScales ; ++k){
+                Mat sum_temp = Mat::zeros(res_bsx_times[k][0].rows, res_bsx_times[k][0].cols, CV_32FC2);
+                for(int n = 0 ; n < res_bsx_times[k].size() ; ++n){
+                    sum_temp = sum_temp + res_bsx_times[k].at(n);
+                }
                 responsef.push_back(sum_temp.clone());
             }
 
@@ -533,12 +565,19 @@ void BACF_optimized(parameters &params,track_result &results){
 
             //% update position
             //--old_pos = pos;
-            old_pos[0] = (float)pos[0];
-            old_pos[1] = (float)pos[1];
+            //old_pos[0] = (float)pos[0];
+            //old_pos[1] = (float)pos[1];
 
             //--pos = pos + translation_vec;
+//            cout<<"------------------------------"<<endl;
+//            cout<<"pos = ("<<pos[0]<<","<<pos[1]<<")"<<endl;
+//            cout<<"translation_vec = ("<<translation_vec[0]<<","<<translation_vec[1]<<")"<<endl;
             pos[0] = pos[0] + translation_vec.at(0);
             pos[1] = pos[1] + translation_vec.at(1);
+//            cout<<"pos = ("<<pos[0]<<","<<pos[1]<<")"<<endl;
+//            cout<<"------------------------------"<<endl;
+//            imshow("im",im);
+//            waitKey(0);
 
 
         }
@@ -547,7 +586,7 @@ void BACF_optimized(parameters &params,track_result &results){
         num_images = 1;
 
         //% extract training sample image region
-        vector <double> round_sz_out(2);
+        double round_sz_out[2];
         round_sz_out[0] = round(sz[0]*currentScaleFactor);
         round_sz_out[1] = round(sz[1]*currentScaleFactor);
         vector <Mat> pixels(1);
@@ -558,25 +597,32 @@ void BACF_optimized(parameters &params,track_result &results){
 
         //% extract features and do windowing
         //--xf = fft2(bsxfun(@times,get_features(pixels,features,global_feat_params),cos_window));
-        vector <vector <Mat>> feature_pixels_out(num_images);
+        vector <vector <Mat>> feature_pixels_out(1);
         double support_sz_out[2];
-        get_features(pixels,features,global_feat_params,num_images,feature_pixels_out,support_sz_out);
+        get_features(pixels,features,global_feat_params,1,feature_pixels_out,support_sz_out);
 
         //imshow("feature",feature_pixels_out.at(0).at(0));
         //waitKey(0);
 
-        vector <vector <Mat>> bsx_times(num_images);
-        for(int k = 0 ; k < num_images ; ++k){
+        vector <vector <Mat>> bsx_times(1);
+        for(int k = 0 ; k < 1 ; ++k){
             for(int n = 0 ; n < feature_dim ; ++n){
                 //Mat mul_value = Mat::zeros(use_sz[0],use_sz[1],CV_32F);
                 //mul_value = feature_pixels_out[k].at(n).mul(cos_window);
                 bsx_times[k].push_back(feature_pixels_out[k].at(n).mul(cos_window));
+//                cout<<feature_pixels_out[k].at(n).at<float>(1,13)<<endl;
+//                cout<<cos_window.at<float>(1,13)<<endl;
+//                cout<<feature_pixels_out[k].at(n).at<float>(1,13)*cos_window.at<float>(1,13)<<endl;
+//                cout<<"n = "<<n<<endl;
+//                cout<<bsx_times[k].at(n)<<endl;
+//                imshow("feature",feature_pixels_out.at(0).at(0));
+//                waitKey(0);
             }
         }
         vector <Mat> xf;
-        for(int k = 0 ; k < num_images ; ++k){
+        for(int k = 0 ; k < 1 ; ++k){
             for(int n = 0 ; n < bsx_times[k].size() ; ++n){
-                Mat xf_temp ;
+                Mat xf_temp;
                 fft2(bsx_times[k][n],xf_temp);
                 xf.push_back(xf_temp.clone());
             }
@@ -623,17 +669,17 @@ void BACF_optimized(parameters &params,track_result &results){
 
 
         //--S_xx = sum(conj(model_xf) .* model_xf, 3);
-        //vector <Mat> model_xf_conj = QT_conj(model_xf);
-        //vector <Mat> mul_model_xf = QT_vec_mul_vec(model_xf_conj,model_xf);
+        vector <Mat> model_xf_conj = QT_conj(model_xf);
+        vector <Mat> mul_model_xf = QT_vec_mul_vec(model_xf_conj,model_xf);
         Mat S_xx_temp(model_xf[0].rows,model_xf[0].cols,CV_32FC2,Scalar(0,0));
-        /*for(int n = 0 ; n < mul_model_xf.size() ; ++n){
+        for(int n = 0 ; n < mul_model_xf.size() ; ++n){
             S_xx_temp = S_xx_temp + mul_model_xf.at(n);
-        }*/
-        for(int n = 0 ; n < model_xf.size() ; ++n){
+        }
+        /*for(int n = 0 ; n < model_xf.size() ; ++n){
             Mat model_xf_conj2 = QT_conj_m(model_xf.at(n));
             Mat mul_model_xf2 = QT_M_mul_M(model_xf_conj2,model_xf.at(n));
             S_xx_temp = S_xx_temp + mul_model_xf2;
-        }
+        }*/
         vector <Mat> temp;
         split(S_xx_temp,temp);
 
@@ -653,64 +699,96 @@ void BACF_optimized(parameters &params,track_result &results){
 
 
             //--S_lx = sum(conj(model_xf) .* l_f, 3);
+            mul_model_xf.clear();
+            mul_model_xf = QT_vec_mul_vec(model_xf_conj,l_f);
             Mat S_lx(model_xf[0].rows,model_xf[0].cols,CV_32FC2,Scalar(0,0));
-            Mat S_hx(model_xf[0].rows,model_xf[0].cols,CV_32FC2,Scalar(0,0));
-            vector <Mat> h;
+            for(int n = 0 ; n < mul_model_xf.size() ; ++n){
+                S_lx = S_lx + mul_model_xf.at(n);
+            }
 
+
+
+            //--S_hx = sum(conj(model_xf) .* h_f, 3);
+            mul_model_xf.clear();
+            mul_model_xf = QT_vec_mul_vec(model_xf_conj,h_f);
+            Mat S_hx(mul_model_xf[0].rows,mul_model_xf[0].cols,CV_32FC2,Scalar(0));
             for(int n = 0 ; n < model_xf.size() ; ++n){
-                //--S_lx = sum(conj(model_xf) .* l_f, 3);
-                Mat model_xf_conj2 = QT_conj_m(model_xf.at(n));
-                Mat mul_model_xf2 = QT_M_mul_M(model_xf_conj2,l_f.at(n));
-                S_lx = S_lx + mul_model_xf2;
-
-                //--S_hx = sum(conj(model_xf) .* h_f, 3);
-                mul_model_xf2 = QT_M_mul_M(model_xf_conj2,h_f.at(n));
-                S_hx = S_hx + mul_model_xf2;
+                S_hx = S_hx + mul_model_xf.at(n);
+            }
 
 
-                //各別算出值
-                //1. one = ((1/(T*mu)) * bsxfun(@times, yf, model_xf))
-                //2. two = ((1/mu) * l_f)
-                //3. h_f
-                //4. three = ((1/(T*mu)) * bsxfun(@times, model_xf, (S_xx .* yf)))
-                //5. four = ((1/mu) * bsxfun(@times, model_xf, S_lx))
-                //6. five = (bsxfun(@times, model_xf, S_hx))
-                //7. six = bsxfun(@rdivide,(three - four + five), B)
-                //g_f = (one - two + h_f) - six;
-                //--g_f = (((1/(T*mu)) * bsxfun(@times, yf, model_xf)) - ((1/mu) * l_f) + h_f) - ...
-                    //--bsxfun(@rdivide,(((1/(T*mu)) * bsxfun(@times, model_xf, (S_xx .* yf))) - ((1/mu) * bsxfun(@times, model_xf, S_lx)) + (bsxfun(@times, model_xf, S_hx))), B);
+            vector <Mat> one,two,three,four,five,six;
+            for(int j = 0 ; j < model_xf.size() ; ++j){
+                Mat zero = Mat::zeros(model_xf[j].rows,model_xf[j].cols,CV_32FC2);
+                one.push_back(zero.clone());
+                two.push_back(zero.clone());
+                three.push_back(zero.clone());
+                four.push_back(zero.clone());
+                five.push_back(zero.clone());
+                six.push_back(zero.clone());
+            }
 
+            vector <Mat> one_temp = QT_bsxfun(yf,model_xf);
+            Mat mul_three_temp = QT_M_mul_M(S_xx,yf);
+            //Mat mul_three_temp = S_xx.mul(yf);
+            vector <Mat> three_temp = QT_bsxfun(mul_three_temp,model_xf);
+            vector <Mat> four_temp = QT_bsxfun(S_lx,model_xf);
+            vector <Mat> five_temp = QT_bsxfun(S_hx,model_xf);
+            for(int n = 0 ; n < model_xf.size() ; ++n){
+                one.at(n) = one_temp.at(n).mul(1.0/(T*mu));
+                //one.push_back(temp.clone());
+                //one.at(n) = temp.clone();
 
-                //three - four + five
-                Mat three_four_five = QT_M_mul_M(model_xf.at(n),QT_M_mul_M(S_xx,yf)).mul(1.0/(T*mu)) //three
-                        - QT_M_mul_M(model_xf.at(n),S_lx).mul(1.0/mu) //four
-                        + QT_M_mul_M(model_xf.at(n),S_hx).clone(); //five
+                two.at(n) = l_f.at(n).mul(1.0/mu);
+                //two.push_back(temp.clone());
+                //two.at(n) = temp.clone();
 
+                three.at(n) = three_temp.at(n).mul(1.0/(T*mu));
+                //three.at(n) = temp.clone();
+
+                four.at(n) = four_temp.at(n).mul(1.0/mu);
+                //four.at(n) = temp.clone();
+
+                five.at(n) = five_temp.at(n).clone();
+
+                Mat three_four_five = three.at(n) - four.at(n) + five.at(n);
+                //divide(three_four_five,B,temp);
                 vector <Mat> temp2;
                 split(three_four_five,temp2);
                 vector <Mat> temp3(2);
                 temp3.at(0) = temp2.at(0) / B;
                 temp3.at(1) = temp2.at(1) / B;
+                Mat temp;
+                merge(temp3,temp);
+                six.at(n) = temp.clone();
 
-                Mat six;
-                merge(temp3,six);
-                g_f.at(n) = (QT_M_mul_M(yf,model_xf.at(n)).mul(1.0/(T*mu)) - l_f.at(n).mul(1.0/mu) + h_f.at(n)) - six;
+                g_f.at(n) = (one.at(n) - two.at(n) + h_f.at(n)) - six.at(n);
+                //g_f.at(n) = temp.clone();
 
 
-                //%   solve for H
-                //--h = (T/((mu*T)+ params.admm_lambda))* ifft2((mu*g_f) + l_f);
-                Mat iff2_para = g_f.at(n).mul(mu) + l_f.at(n);
-                Mat iff2_temp ;
+            }
+
+            //%   solve for H
+            //--h = (T/((mu*T)+ params.admm_lambda))* ifft2((mu*g_f) + l_f);
+            vector <Mat> h;
+            //vector <Mat> iff2_para;
+            //(mu*g_f) + l_f
+            for(int n = 0 ; n < g_f.size() ; ++n){
+                Mat iff2_para;
+                iff2_para = g_f.at(n).mul(mu) + l_f.at(n);
+                //iff2_para.push_back(g_f.at(n).mul(mu) + l_f.at(n));
+
+                Mat iff2_temp;
                 idft(iff2_para, iff2_temp, DFT_COMPLEX_OUTPUT+DFT_SCALE, 0);
 
                 h.push_back(iff2_temp.mul(T/((mu*T)+ params.admm_lambda)));
-
             }
 
 
 
+
             //--[sx,sy,h] = get_subwindow_no_window(h, floor(use_sz/2) , small_filter_sz);
-            vector <int> use_sz_temp(2);
+            int use_sz_temp[2];
             use_sz_temp[0] = floor(use_sz[0]/2);
             use_sz_temp[1] = floor(use_sz[1]/2);
             vector <int> sx;

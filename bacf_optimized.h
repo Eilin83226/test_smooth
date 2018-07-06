@@ -16,10 +16,10 @@ using namespace std;
 extern int dim_rg;
 extern int dim_cg;
 
-const double width = 240;
-const double height = 135;
-const double img_w = 240;
-const double img_h = 135;
+const double width = 426;
+const double height = 240;
+const double img_w = 426;
+const double img_h = 240;
 
 void BACF_optimized(parameters &params,track_result &results);
 template<typename ty>

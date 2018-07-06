@@ -1,7 +1,7 @@
 #include "mexresize.h"
 
 
-Mat mexResize(Mat &im_patch,vector <double> &resize_target,string interp){
+Mat mexResize(Mat &im_patch,double resize_target[],string interp){
 
     Mat img = im_patch;
     Mat imgr;
@@ -30,4 +30,7 @@ Mat mexResize(Mat &im_patch,vector <double> &resize_target,string interp){
     resize(img,imgr,newSize,0,0,interpolation);
     //convert back to matlab representation
     return imgr;
+
+    //imshow("im",img);
+    //waitKey(0);
 }
