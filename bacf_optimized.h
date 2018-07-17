@@ -16,10 +16,12 @@ using namespace std;
 extern int dim_rg;
 extern int dim_cg;
 
-const double width = 426;
-const double height = 240;
-const double img_w = 426;
-const double img_h = 240;
+const double width = 853;
+const double height = 480;
+const double img_w = 853;
+const double img_h = 480;
+const double show_w = 640;
+const double show_h = 480;
 
 void BACF_optimized(parameters &params,track_result &results);
 template<typename ty>
@@ -33,4 +35,6 @@ vector <Mat> QT_conj(vector <Mat> &Vec_Src);
 Mat QT_conj_m(Mat &src);
 vector <Mat> QT_vec_mul_vec(vector <Mat> &Vec_Src1 , vector <Mat> &Vec_Src2);
 Mat QT_M_mul_M(Mat &M_Src1,Mat &M_Src2);
+Mat BGR2RGB(Mat &im);
+Mat RGB2BGR(Mat &im);
 #endif // BACF_OPTIMIZED_H

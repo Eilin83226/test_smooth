@@ -87,7 +87,7 @@ void BACF_optimized(parameters &params,track_result &results){
 
 
     //% window size, taking padding into account
-    double sz[2];
+    vector <double> sz(2);
     if(params.search_area_shape == "proportional") {
         //% proportional area, same aspect ratio as the target
         sz[0] = floor(base_target_sz[0] * search_area_scale);
@@ -185,32 +185,43 @@ void BACF_optimized(parameters &params,track_result &results){
     }
 
 
-    //% Calculate feature dimension
-    Mat im;
-    try{
-        im = imread(video_path + "/test_426x240_bmp/" + s_frames[0],CV_LOAD_IMAGE_UNCHANGED);
-        //resize(im,im,Size(width,height));
-//        cout<<im.type()<<endl;
-//        cout<<(int)im.at<Vec3b>(55,8)[0]<<endl;
-//        cout<<(int)im.at<Vec3b>(55,8)[1]<<endl;
-//        cout<<(int)im.at<Vec3b>(55,8)[2]<<endl;
-//        cout<<im<<endl;
+//    VideoCapture video("C:/Users/Eilin/Desktop/testVideo/test2_640x480.mp4");
+//    if (!video.isOpened()) {
+//        cout << "Fail" << endl;
+//        system("pause");
+//    }
 
-//        imshow("im",im);
-//        waitKey(0);
+    //% Calculate feature dimension
+    Mat im,read_im;
+    try{
+        read_im = imread(video_path + "/test2_853x480/" + s_frames[0],CV_LOAD_IMAGE_UNCHANGED);
+        read_im = BGR2RGB(read_im);
+        //video >> read_im;
+        read_im.copyTo(im);
+        resize(im,im,Size(width,height));
     }
     catch(exception& e){
         try{
-            im = imread(s_frames[0]);
+            read_im = imread(s_frames[0]);
+            read_im = BGR2RGB(read_im);
+            read_im.copyTo(im);
             resize(im,im,Size(width,height));
         }
         catch(exception& e){
             //%disp([video_path '/' s_frames{1}])
-            im = imread(video_path + "/" + s_frames[0]);
+            read_im = imread(video_path + "/" + s_frames[0]);
+            read_im = BGR2RGB(read_im);
+            read_im.copyTo(im);
             resize(im,im,Size(width,height));
         }
     }
 
+//for(int i = 0 ; i < im.rows ; ++i){
+//    for(int j = 0 ; j < im.cols ; ++j){
+//        cout<<(int)im.at<Vec3b>(i,j)[0]<<" ";
+//    }
+//    cout<<endl;
+//}
 
     bool colorImage;
     if(im.channels() == 3){
@@ -271,6 +282,7 @@ void BACF_optimized(parameters &params,track_result &results){
     vector <float> scaleFactors;
     double min_scale_factor;
     double max_scale_factor;
+
     if(nScales > 0){
         for(int i = -floor((nScales-1)/2) ; i <= ceil((nScales-1)/2) ; ++i){
             scale_exp.push_back(i);
@@ -315,25 +327,23 @@ void BACF_optimized(parameters &params,track_result &results){
         newton_iterations = params.newton_iterations;
     }
 
-
     //% initialize the projection matrix (x,y,h,w)
-    //--rect_position = zeros(num_frames, 4);
+    //-- rect_position = zeros(num_frames, 4);
     //vector <vector <double> > rect_position(num_frames,vector <double>(4,0));
     //think
     //vector <Rect> rect_position(num_frames,Rect(0,0,0,0));
 
 
-    //--time = 0;
+    //-- time = 0;
     double time = 0;
 
 
     //% allocate memory for multi-scale tracking
     vector <Mat> multires_pixel_template(nScales);
 
-    int small_filter_sz[2];
+    vector <int> small_filter_sz(2);
     small_filter_sz[0] = floor(base_target_sz[0]/featureRatio);
     small_filter_sz[1] = floor(base_target_sz[1]/featureRatio);
-
 
 
     //可delete
@@ -343,17 +353,24 @@ void BACF_optimized(parameters &params,track_result &results){
     for(int frame_num = 1 ; frame_num <= s_frames.size() ; ++frame_num){
         //%load image
         try{
-            im = imread(video_path + "/test_426x240_bmp/" + s_frames[frame_num-1]);
-            //resize(im,im,Size(width,height));
+            read_im = imread(video_path + "/test2_853x480/" + s_frames[frame_num-1]);
+            read_im = BGR2RGB(read_im);
+            //video >> read_im;
+            read_im.copyTo(im);
+            resize(im,im,Size(width,height));
         }
         catch(exception& e){
             try{
-                im = imread(s_frames[frame_num-1]);
-                //resize(im,im,Size(width,height));
+                read_im = imread(s_frames[frame_num-1]);
+                read_im = BGR2RGB(read_im);
+                read_im.copyTo(im);
+                resize(im,im,Size(width,height));
             }
             catch(exception& e){
-                im = imread(video_path + "/" + s_frames[frame_num-1]);
-                //resize(im,im,Size(width,height));
+                read_im = imread(video_path + "/" + s_frames[frame_num-1]);
+                read_im = BGR2RGB(read_im);
+                read_im.copyTo(im);
+                resize(im,im,Size(width,height));
             }
         }
         if(im.channels() > 1 && colorImage == false){
@@ -361,8 +378,16 @@ void BACF_optimized(parameters &params,track_result &results){
         }
 
 
+//for(int i = 0 ; i < im.rows ; ++i){
+//    for(int j = 0 ; j < im.cols ; ++j){
+//        cout<<(int)im.at<Vec3b>(i,j)[0]<<" ";
+//    }
+//    cout<<endl;
+//}
+
+
         //紀錄起始時間
-        //--tic();
+        //-- tic();
         double start_time = clock();
 
 
@@ -370,9 +395,9 @@ void BACF_optimized(parameters &params,track_result &results){
         //%just want to initialize the tracker there
         if(frame_num > 1){
             for(scale_ind = 0 ; scale_ind < nScales ; ++scale_ind){
-                //--multires_pixel_template(:,:,:,scale_ind) = ...
-                    //--get_pixels(im, pos, round(sz*currentScaleFactor*scaleFactors(scale_ind)), sz);
-                double sz_round[2];
+                //-- multires_pixel_template(:,:,:,scale_ind) = ...
+                    //-- get_pixels(im, pos, round(sz*currentScaleFactor*scaleFactors(scale_ind)), sz);
+                vector <double> sz_round(2);
                 sz_round[0] = round(sz[0]*currentScaleFactor*scaleFactors[scale_ind]);
                 sz_round[1] = round(sz[1]*currentScaleFactor*scaleFactors[scale_ind]);
                 Mat get_pixels_img = get_pixels(im , pos , sz_round , sz);
@@ -381,7 +406,7 @@ void BACF_optimized(parameters &params,track_result &results){
             }
 
 
-            //--xtf = fft2(bsxfun(@times,get_features(multires_pixel_template,features,global_feat_params),cos_window));
+            //-- xtf = fft2(bsxfun(@times,get_features(multires_pixel_template,features,global_feat_params),cos_window));
             num_images = nScales;
             vector <vector <Mat>> feature_pixels(nScales);
             double support_sz[2];
@@ -417,7 +442,7 @@ void BACF_optimized(parameters &params,track_result &results){
             }
             //cout << "**********************************" <<endl;
 
-            //--responsef = permute(sum(bsxfun(@times, conj(g_f), xtf), 3), [1 2 4 3]);
+            //-- responsef = permute(sum(bsxfun(@times, conj(g_f), xtf), 3), [1 2 4 3]);
             //bsxfun(@times, conj(g_f), xtf)
             vector <vector <Mat>> res_bsx_times(nScales);
             for(int k = 0 ; k < nScales ; ++k){
@@ -449,17 +474,17 @@ void BACF_optimized(parameters &params,track_result &results){
             //% response so it has the same size as the image patch
             if(interpolate_response == 2){
                 //% use dynamic interp size
-                //--interp_sz = floor(size(y) * featureRatio * currentScaleFactor);
+                //-- interp_sz = floor(size(y) * featureRatio * currentScaleFactor);
                 interp_sz[0] = floor(dim_rg * featureRatio * currentScaleFactor);
                 interp_sz[1] = floor(dim_cg * featureRatio * currentScaleFactor);
             }
-            //--responsef_padded = resizeDFT2(responsef, interp_sz);
+            //-- responsef_padded = resizeDFT2(responsef, interp_sz);
             vector <Mat> responsef_padded;
             resizeDFT2(responsef,interp_sz,responsef_padded);
 
 
             //% response in the spatial domain
-            //--response = ifft2(responsef_padded, 'symmetric');
+            //-- response = ifft2(responsef_padded, 'symmetric');
             vector <Mat> response;
             for(int n = 0 ; n < responsef_padded.size() ; ++n){
                 Mat idft_symmetric ;//= Mat::zeros(responsef_padded[0].rows,responsef_padded[0].cols,CV_32F);
@@ -471,16 +496,16 @@ void BACF_optimized(parameters &params,track_result &results){
             float disp_row,disp_col;
             int sind;
             if(interpolate_response == 3){
-                //--error('Invalid parameter value for interpolate_response');
+                //-- error('Invalid parameter value for interpolate_response');
                 QMessageBox::warning(NULL, "Failed","Invalid parameter value for interpolate_response");
             }
             else if(interpolate_response == 4){
-                //--[disp_row, disp_col, sind] = resp_newton(response, responsef_padded, newton_iterations, ky, kx, use_sz);
+                //-- [disp_row, disp_col, sind] = resp_newton(response, responsef_padded, newton_iterations, ky, kx, use_sz);
                 resp_newton(response, responsef_padded, newton_iterations, ky, kx, use_sz, disp_row, disp_col, sind);
             }
             else{
                 //matlab以行為主
-                //--[row, col, sind] = ind2sub(size(response), find(response == max(response(:)), 1));
+                //-- [row, col, sind] = ind2sub(size(response), find(response == max(response(:)), 1));
                 double maxVal = -10000;
                 Point maxLoc;
                 int dim_max = -1;
@@ -514,61 +539,62 @@ void BACF_optimized(parameters &params,track_result &results){
                 sind = dim_max;
 
 
-                //--disp_row = mod(row - 1 + floor((interp_sz(1)-1)/2), interp_sz(1)) - floor((interp_sz(1)-1)/2);
+                //-- disp_row = mod(row - 1 + floor((interp_sz(1)-1)/2), interp_sz(1)) - floor((interp_sz(1)-1)/2);
                 disp_row = mod((float)row - 1 + floor((float)(interp_sz[0]-1)/2), interp_sz[0]) - floor((float)(interp_sz[0]-1)/2);
-                //--disp_col = mod(col - 1 + floor((interp_sz(2)-1)/2), interp_sz(2)) - floor((interp_sz(2)-1)/2);
+                //-- disp_col = mod(col - 1 + floor((interp_sz(2)-1)/2), interp_sz(2)) - floor((interp_sz(2)-1)/2);
                 disp_col = mod((float)col - 1 + floor((float)(interp_sz[1]-1)/2), interp_sz[1]) - floor((float)(interp_sz[1]-1)/2);
             }
 
 
             //% calculate translation
             vector <int> translation_vec;
-            //--switch interpolate_response
+            //-- switch interpolate_response
             switch(interpolate_response){
                 case 0:
-                    //--translation_vec = round([disp_row, disp_col] * featureRatio * currentScaleFactor * scaleFactors(sind));
+                    //-- translation_vec = round([disp_row, disp_col] * featureRatio * currentScaleFactor * scaleFactors(sind));
                     translation_vec.push_back(round(disp_row * featureRatio * currentScaleFactor * scaleFactors.at(sind)));
                     translation_vec.push_back(round(disp_col * featureRatio * currentScaleFactor * scaleFactors.at(sind)));
                 case 1:
-                    //--translation_vec = round([disp_row, disp_col] * currentScaleFactor * scaleFactors(sind));
+                    //-- translation_vec = round([disp_row, disp_col] * currentScaleFactor * scaleFactors(sind));
                     translation_vec.push_back(round(disp_row * currentScaleFactor * scaleFactors.at(sind)));
                     translation_vec.push_back(round(disp_col * currentScaleFactor * scaleFactors.at(sind)));
                 case 2:
-                    //--translation_vec = round([disp_row, disp_col] * scaleFactors(sind));
+                    //-- translation_vec = round([disp_row, disp_col] * scaleFactors(sind));
                     translation_vec.push_back(round(disp_row * scaleFactors.at(sind)));
                     translation_vec.push_back(round(disp_col * scaleFactors.at(sind)));
                 case 3:
-                    //--translation_vec = round([disp_row, disp_col] * featureRatio * currentScaleFactor * scaleFactors(sind));
+                    //-- translation_vec = round([disp_row, disp_col] * featureRatio * currentScaleFactor * scaleFactors(sind));
                     translation_vec.push_back(round(disp_row * featureRatio * currentScaleFactor * scaleFactors.at(sind)));
                     translation_vec.push_back(round(disp_col * featureRatio * currentScaleFactor * scaleFactors.at(sind)));
                 case 4:
-                    //--translation_vec = round([disp_row, disp_col] * featureRatio * currentScaleFactor * scaleFactors(sind));
+                    //-- translation_vec = round([disp_row, disp_col] * featureRatio * currentScaleFactor * scaleFactors(sind));
+//                    cout<<disp_row<<","<<featureRatio<<","<<currentScaleFactor<<","<<scaleFactors.at(sind)<<","<<sind<<endl;
                     translation_vec.push_back(round(disp_row * featureRatio * currentScaleFactor * scaleFactors.at(sind)));
                     translation_vec.push_back(round(disp_col * featureRatio * currentScaleFactor * scaleFactors.at(sind)));
             }
 
 
             //% set the scale
-            //--currentScaleFactor = currentScaleFactor * scaleFactors(sind);
+            //-- currentScaleFactor = currentScaleFactor * scaleFactors(sind);
             currentScaleFactor = currentScaleFactor * scaleFactors.at(sind);
 
 
             //% adjust to make sure we are not too large or too small
             if(currentScaleFactor < min_scale_factor){
-                //--currentScaleFactor = min_scale_factor;
+                //-- currentScaleFactor = min_scale_factor;
                 currentScaleFactor = (float)min_scale_factor;
             }
             else if(currentScaleFactor > max_scale_factor){
-                //--currentScaleFactor = max_scale_factor;
+                //-- currentScaleFactor = max_scale_factor;
                 currentScaleFactor = (float)max_scale_factor;
             }
 
             //% update position
-            //--old_pos = pos;
+            //-- old_pos = pos;
             //old_pos[0] = (float)pos[0];
             //old_pos[1] = (float)pos[1];
 
-            //--pos = pos + translation_vec;
+            //-- pos = pos + translation_vec;
 //            cout<<"------------------------------"<<endl;
 //            cout<<"pos = ("<<pos[0]<<","<<pos[1]<<")"<<endl;
 //            cout<<"translation_vec = ("<<translation_vec[0]<<","<<translation_vec[1]<<")"<<endl;
@@ -586,45 +612,51 @@ void BACF_optimized(parameters &params,track_result &results){
         num_images = 1;
 
         //% extract training sample image region
-        double round_sz_out[2];
+        vector <double> round_sz_out(2);
         round_sz_out[0] = round(sz[0]*currentScaleFactor);
         round_sz_out[1] = round(sz[1]*currentScaleFactor);
         vector <Mat> pixels(1);
         pixels[0]= get_pixels(im , pos , round_sz_out , sz);
 
+//cout<<"round_sz_out = "<<pixels[0].rows<<","<<pixels[0].cols<<endl;
+//for(int i = 0 ; i < pixels[0].rows ; ++i){
+//    for(int j = 0 ; j < pixels[0].cols ; ++j){
+//        cout<<(int)pixels[0].at<Vec3b>(i,j)[0]<<" ";
+//    }
+//    cout<<endl;
+//}
+
         //imshow("pixel",pixels.at(0));
         //waitKey(1);
 
         //% extract features and do windowing
-        //--xf = fft2(bsxfun(@times,get_features(pixels,features,global_feat_params),cos_window));
+        //-- xf = fft2(bsxfun(@times,get_features(pixels,features,global_feat_params),cos_window));
         vector <vector <Mat>> feature_pixels_out(1);
         double support_sz_out[2];
         get_features(pixels,features,global_feat_params,1,feature_pixels_out,support_sz_out);
 
-        //imshow("feature",feature_pixels_out.at(0).at(0));
-        //waitKey(0);
+//        cout<<"feature_pixels_out = "<<endl;
+//        cout<<feature_pixels_out[0].at(0)<<endl;
 
-        vector <vector <Mat>> bsx_times(1);
-        for(int k = 0 ; k < 1 ; ++k){
-            for(int n = 0 ; n < feature_dim ; ++n){
-                //Mat mul_value = Mat::zeros(use_sz[0],use_sz[1],CV_32F);
-                //mul_value = feature_pixels_out[k].at(n).mul(cos_window);
-                bsx_times[k].push_back(feature_pixels_out[k].at(n).mul(cos_window));
-//                cout<<feature_pixels_out[k].at(n).at<float>(1,13)<<endl;
-//                cout<<cos_window.at<float>(1,13)<<endl;
-//                cout<<feature_pixels_out[k].at(n).at<float>(1,13)*cos_window.at<float>(1,13)<<endl;
-//                cout<<"n = "<<n<<endl;
-//                cout<<bsx_times[k].at(n)<<endl;
-//                imshow("feature",feature_pixels_out.at(0).at(0));
-//                waitKey(0);
-            }
-        }
+//        imshow("feature",feature_pixels_out.at(0).at(0));
+//        waitKey(0);
+
         vector <Mat> xf;
         for(int k = 0 ; k < 1 ; ++k){
-            for(int n = 0 ; n < bsx_times[k].size() ; ++n){
+            for(int n = 0 ; n < feature_pixels_out[k].size() ; ++n){
                 Mat xf_temp;
-                fft2(bsx_times[k][n],xf_temp);
+                fft2(feature_pixels_out[k].at(n).mul(cos_window),xf_temp);
                 xf.push_back(xf_temp.clone());
+
+//                Mat c = feature_pixels_out[k].at(n).mul(cos_window);
+//                cout<<"c = "<<endl;
+//                cout<<c<<endl;
+
+//                cout<<"xf["<<n<<"]="<<endl;
+//                cout<<xf.at(n)<<endl;
+
+//                imshow("feature",feature_pixels_out.at(0).at(0));
+//                waitKey(0);
             }
         }
 
@@ -635,10 +667,8 @@ void BACF_optimized(parameters &params,track_result &results){
         }
         else{
             for(int n = 0 ; n < model_xf.size() ; n++){
-                //Mat temp;
-                //temp = (model_xf[n].mul(1.0 - (float)learning_rate)) + (xf[n].mul((float)learning_rate));
+                //-- model_xf = ((1 - learning_rate) * model_xf) + (learning_rate * xf);
                 model_xf[n] = (model_xf[n].mul(1.0 - (float)learning_rate)) + (xf[n].mul((float)learning_rate));
-
             }
         }
 
@@ -668,24 +698,23 @@ void BACF_optimized(parameters &params,track_result &results){
         double T = use_sz[0] * use_sz[1];
 
 
-        //--S_xx = sum(conj(model_xf) .* model_xf, 3);
-        vector <Mat> model_xf_conj = QT_conj(model_xf);
-        vector <Mat> mul_model_xf = QT_vec_mul_vec(model_xf_conj,model_xf);
+        //-- S_xx = sum(conj(model_xf) .* model_xf, 3);
+        //vector <Mat> model_xf_conj = QT_conj(model_xf);
+        //vector <Mat> mul_model_xf = QT_vec_mul_vec(model_xf_conj,model_xf);
         Mat S_xx_temp(model_xf[0].rows,model_xf[0].cols,CV_32FC2,Scalar(0,0));
-        for(int n = 0 ; n < mul_model_xf.size() ; ++n){
-            S_xx_temp = S_xx_temp + mul_model_xf.at(n);
+        for(int n = 0 ; n < model_xf.size() ; ++n){
+            //Mat model_xf_conj = QT_conj_m(model_xf.at(n));
+            Mat mul_model_xf = QT_M_mul_M(QT_conj_m(model_xf.at(n)),model_xf.at(n));
+            S_xx_temp = S_xx_temp + mul_model_xf;
         }
-        /*for(int n = 0 ; n < model_xf.size() ; ++n){
-            Mat model_xf_conj2 = QT_conj_m(model_xf.at(n));
-            Mat mul_model_xf2 = QT_M_mul_M(model_xf_conj2,model_xf.at(n));
-            S_xx_temp = S_xx_temp + mul_model_xf2;
-        }*/
         vector <Mat> temp;
         split(S_xx_temp,temp);
 
         Mat S_xx;
         S_xx = temp.at(0).clone();
 
+//        cout<<"S_xx = "<<endl;
+//        cout<<S_xx<<endl;
 
         params.admm_iterations = 2;
 
@@ -693,153 +722,175 @@ void BACF_optimized(parameters &params,track_result &results){
         //%   ADMM
         while (i <= params.admm_iterations ) {
             //%   solve for G- please refer to the paper for more details
-            //-- B = S_xx + (T * mu);
+            //--  B = S_xx + (T * mu);
             Mat B; //沒有虛數
             add((T * mu),S_xx,B);
+//cout<<"B = "<<endl;
+//cout<<B<<endl;
 
-
-            //--S_lx = sum(conj(model_xf) .* l_f, 3);
-            mul_model_xf.clear();
-            mul_model_xf = QT_vec_mul_vec(model_xf_conj,l_f);
+            //mul_model_xf.clear();
+            //mul_model_xf = QT_vec_mul_vec(model_xf_conj,l_f);
             Mat S_lx(model_xf[0].rows,model_xf[0].cols,CV_32FC2,Scalar(0,0));
-            for(int n = 0 ; n < mul_model_xf.size() ; ++n){
-                S_lx = S_lx + mul_model_xf.at(n);
-            }
-
-
-
-            //--S_hx = sum(conj(model_xf) .* h_f, 3);
-            mul_model_xf.clear();
-            mul_model_xf = QT_vec_mul_vec(model_xf_conj,h_f);
-            Mat S_hx(mul_model_xf[0].rows,mul_model_xf[0].cols,CV_32FC2,Scalar(0));
+            Mat S_hx(model_xf[0].rows,model_xf[0].cols,CV_32FC2,Scalar(0));
+//double start1 = clock();
             for(int n = 0 ; n < model_xf.size() ; ++n){
-                S_hx = S_hx + mul_model_xf.at(n);
+                //-- S_lx = sum(conj(model_xf) .* l_f, 3);
+                S_lx = S_lx + QT_M_mul_M(QT_conj_m(model_xf.at(n)),l_f.at(n));
+                //-- S_hx = sum(conj(model_xf) .* h_f, 3);
+                S_hx = S_hx + QT_M_mul_M(QT_conj_m(model_xf.at(n)),h_f.at(n));
             }
+//cout<<"S_lx = " <<endl;
+//cout<<S_lx<<endl;
+//cout<<"S_hx = " <<endl;
+//cout<<S_hx<<endl;
 
 
-            vector <Mat> one,two,three,four,five,six;
-            for(int j = 0 ; j < model_xf.size() ; ++j){
-                Mat zero = Mat::zeros(model_xf[j].rows,model_xf[j].cols,CV_32FC2);
-                one.push_back(zero.clone());
-                two.push_back(zero.clone());
-                three.push_back(zero.clone());
-                four.push_back(zero.clone());
-                five.push_back(zero.clone());
-                six.push_back(zero.clone());
-            }
-
-            vector <Mat> one_temp = QT_bsxfun(yf,model_xf);
-            Mat mul_three_temp = QT_M_mul_M(S_xx,yf);
-            //Mat mul_three_temp = S_xx.mul(yf);
-            vector <Mat> three_temp = QT_bsxfun(mul_three_temp,model_xf);
-            vector <Mat> four_temp = QT_bsxfun(S_lx,model_xf);
-            vector <Mat> five_temp = QT_bsxfun(S_hx,model_xf);
+            vector <Mat> h;
             for(int n = 0 ; n < model_xf.size() ; ++n){
-                one.at(n) = one_temp.at(n).mul(1.0/(T*mu));
-                //one.push_back(temp.clone());
-                //one.at(n) = temp.clone();
+                //各別算出值
+                //1. one = ((1/(T*mu)) * bsxfun(@times, yf, model_xf))
+                //2. two = ((1/mu) * l_f)
+                //3. h_f
+                //4. three = ((1/(T*mu)) * bsxfun(@times, model_xf, (S_xx .* yf)))
+                //5. four = ((1/mu) * bsxfun(@times, model_xf, S_lx))
+                //6. five = (bsxfun(@times, model_xf, S_hx))
+                //7. six = bsxfun(@rdivide,(three - four + five), B)
+                //g_f = (one - two + h_f) - six;
 
-                two.at(n) = l_f.at(n).mul(1.0/mu);
-                //two.push_back(temp.clone());
-                //two.at(n) = temp.clone();
-
-                three.at(n) = three_temp.at(n).mul(1.0/(T*mu));
-                //three.at(n) = temp.clone();
-
-                four.at(n) = four_temp.at(n).mul(1.0/mu);
-                //four.at(n) = temp.clone();
-
-                five.at(n) = five_temp.at(n).clone();
-
-                Mat three_four_five = three.at(n) - four.at(n) + five.at(n);
-                //divide(three_four_five,B,temp);
+                Mat one = QT_M_mul_M(yf,model_xf.at(n)).mul(1.0/(T*mu));
+                //one.push_back(QT_M_mul_M(yf,model_xf.at(n)).mul(1.0/(T*mu)));
+//cout<<"one = "<<one.type()<<endl;
+//cout<<one<<endl;
+                Mat two = l_f.at(n).mul(1.0/mu);
+                //two.push_back(l_f.at(n).mul(1.0/mu));
+//cout<<"two = "<<two.type()<<endl;
+//cout<<two<<endl;
+                Mat three = QT_M_mul_M(model_xf.at(n),QT_M_mul_M(S_xx,yf)).mul(1.0/(T*mu));
+                //three.push_back(QT_M_mul_M(model_xf.at(n),QT_M_mul_M(S_xx,yf)).mul(1.0/(T*mu)));
+//cout<<"three = "<<three.type()<<endl;
+//cout<<three<<endl;
+                Mat four = QT_M_mul_M(model_xf.at(n),S_lx).mul(1.0/mu);
+                //four.push_back(QT_M_mul_M(model_xf.at(n),S_lx).mul(1.0/mu));
+//cout<<"four = "<<four.type()<<endl;
+//cout<<four<<endl;
+                Mat five = QT_M_mul_M(model_xf.at(n),S_hx);
+                //five.push_back(QT_M_mul_M(model_xf.at(n),S_hx));
+//cout<<"five = "<<five.type()<<endl;
+//cout<<five<<endl;
+                Mat three_four_five = three - four + five;
                 vector <Mat> temp2;
                 split(three_four_five,temp2);
                 vector <Mat> temp3(2);
                 temp3.at(0) = temp2.at(0) / B;
                 temp3.at(1) = temp2.at(1) / B;
-                Mat temp;
-                merge(temp3,temp);
-                six.at(n) = temp.clone();
 
-                g_f.at(n) = (one.at(n) - two.at(n) + h_f.at(n)) - six.at(n);
-                //g_f.at(n) = temp.clone();
+                Mat six;
+                merge(temp3,six);
+//cout<<"six = "<<six.type()<<endl;
+//cout<<six<<endl;
 
+                g_f.at(n) = (one - two + h_f.at(n)) - six;
 
-            }
+//cout<<"g_f = "<<endl;
+//cout<<g_f.at(n)<<endl;
 
-            //%   solve for H
-            //--h = (T/((mu*T)+ params.admm_lambda))* ifft2((mu*g_f) + l_f);
-            vector <Mat> h;
-            //vector <Mat> iff2_para;
-            //(mu*g_f) + l_f
-            for(int n = 0 ; n < g_f.size() ; ++n){
+                //%   solve for H
+                //-- h = (T/((mu*T)+ params.admm_lambda))* ifft2((mu*g_f) + l_f);
                 Mat iff2_para;
                 iff2_para = g_f.at(n).mul(mu) + l_f.at(n);
-                //iff2_para.push_back(g_f.at(n).mul(mu) + l_f.at(n));
+//cout<<"iff2_para = "<<endl;
+//cout<<iff2_para<<endl;
 
                 Mat iff2_temp;
                 idft(iff2_para, iff2_temp, DFT_COMPLEX_OUTPUT+DFT_SCALE, 0);
 
-                h.push_back(iff2_temp.mul(T/((mu*T)+ params.admm_lambda)));
+//cout<<"iff2_temp = "<<endl;
+//cout<<iff2_temp<<endl;
+
+                h.push_back(iff2_temp.mul(T/((mu*T) + params.admm_lambda)));
+
+//cout<<"h = "<<endl;
+//cout<<h.at(n)<<endl;
+//imshow("feature",feature_pixels_out.at(0).at(0));
+//waitKey(0);
             }
 
+//cout<<"h1 = "<<endl;
+//cout<<h.at(0)<<endl;
 
-
-
-            //--[sx,sy,h] = get_subwindow_no_window(h, floor(use_sz/2) , small_filter_sz);
-            int use_sz_temp[2];
+            //-- [sx,sy,h] = get_subwindow_no_window(h, floor(use_sz/2) , small_filter_sz);
+            vector <int> use_sz_temp(2);
             use_sz_temp[0] = floor(use_sz[0]/2);
             use_sz_temp[1] = floor(use_sz[1]/2);
             vector <int> sx;
             vector <int> sy;
             get_subwindow_no_window(h,use_sz_temp,small_filter_sz,sx,sy);
+//cout<<"h = "<<h.at(0).type()<<endl;
+//for(int i = 0 ; i < h.at(0).rows ; ++i){
+//    for(int j = 0 ; j < h.at(0).cols ; ++j){
+//        cout<<h.at(0).at<Vec2f>(i,j)<<" ";
+//    }cout<<endl;
+//}
+//cout<<"sx = "<<endl;
+//for(int i = 0 ; i < sx.size() ; ++i){
+//    cout<<sx.at(i)<<" ";
+//}cout<<endl;
+//cout<<"sy = "<<endl;
+//for(int i = 0 ; i < sy.size() ; ++i){
+//    cout<<sy.at(i)<<" ";
+//}cout<<endl;
 
 
             vector <Mat> t;
             Mat zero = Mat::zeros(use_sz[0],use_sz[1],CV_32FC2);
             Rect roi(sy[0],sx[0],sy.size(),sx.size());
+            cout<<roi<<endl;
             for(int n = 0 ; n < h.size() ; ++n){
-                //--t = single(zeros(use_sz(1), use_sz(2), size(h,3)));
+                //-- t = single(zeros(use_sz(1), use_sz(2), size(h,3)));
                 t.push_back(zero.clone());
 
 
-                //--t(sx,sy,:) = h;
+                //-- t(sx,sy,:) = h;
                 addWeighted(t.at(n)(roi),0,h.at(n),1,0,t.at(n)(roi));
+//cout<<"t = "<<endl;
+//cout<<t.at(n)<<endl;
 
 
-                //--h_f = fft2(t);
+                //-- h_f = fft2(t);
                 Mat t_fft;
                 fft2(t.at(n),t_fft);
                 //dft(t[j],t_fft,DFT_COMPLEX_OUTPUT);
                 h_f.at(n) = t_fft.clone();
-
+//cout<<"h_f = "<<endl;
+//cout<<h_f.at(n)<<endl;
 
                 //%   update L
-                //--l_f = l_f + (mu * (g_f - h_f));
+                //-- l_f = l_f + (mu * (g_f - h_f));
                 Mat value = l_f.at(n) + (mu * (g_f.at(n) - h_f.at(n)));
                 l_f.at(n) = value.clone();
+//cout<<"l_f = "<<endl;
+//cout<<l_f.at(n)<<endl;
             }
 
 
 
             //%   update mu- betha = 10.
-            //--mu = min(betha * mu, mumax);
+            //-- mu = min(betha * mu, mumax);
             mu = min(betha * mu, mumax);
 
 
-            //--i = i+1;
+            //-- i = i+1;
             ++i;
 
         }
 
 
-        //--target_sz = floor(base_target_sz * currentScaleFactor);
+        //-- target_sz = floor(base_target_sz * currentScaleFactor);
         target_sz[0] = floor(base_target_sz[0] * currentScaleFactor);
         target_sz[1] = floor(base_target_sz[1] * currentScaleFactor);
 
         //%save position and calculate FPS
-        //--rect_position(loop_frame,:) = [pos([2,1]) - floor(target_sz([2,1])/2), target_sz([2,1])];
+        //-- rect_position(loop_frame,:) = [pos([2,1]) - floor(target_sz([2,1])/2), target_sz([2,1])];
         //think
         /*if(loop_frame < 4){
             rect_position.at(loop_frame-1).x = pos[1] - floor(target_sz[1]/2);
@@ -853,7 +904,7 @@ void BACF_optimized(parameters &params,track_result &results){
         }*/
 
 
-        //--time = time + toc();
+        //-- time = time + toc();
         double end_time = clock();
         time = 1 / ((end_time - start_time) / CLOCKS_PER_SEC);
         cout<<"fps = "<<time<<endl;
@@ -867,11 +918,13 @@ void BACF_optimized(parameters &params,track_result &results){
 
 //                rect_position_vis = [pos([2,1]) - target_sz([2,1])/2, target_sz([2,1])];
             double rect_position_vis[4] = {(pos[1] - target_sz[1]/2) , (pos[0] - target_sz[0]/2) , target_sz[1] , target_sz[0]};
+            cout<<"loop_frame = "<<loop_frame<<endl;
+            cout<<"rect_position_vis = "<<rect_position_vis[0]<<","<<rect_position_vis[1]<<","<<rect_position_vis[2]<<","<<rect_position_vis[3]<<endl;
 
 
 //                im_to_show = double(im)/255;
             Mat im_to_show;
-            im.convertTo(im_to_show,CV_64FC3);
+            read_im.convertTo(im_to_show,CV_64FC3);
             im_to_show = im_to_show / 255;
 
             if(im_to_show.channels() == 1){
@@ -890,16 +943,18 @@ void BACF_optimized(parameters &params,track_result &results){
 
             if(frame_num == 1){
                 //putText(im_to_show,"FPS: " + to_string(time) ,      Point(20,40),  FONT_HERSHEY_COMPLEX ,       0.5,Scalar(0,255,0));
-                rectangle(im_to_show,Point(rect_position_vis[0],rect_position_vis[1]),Point((rect_position_vis[0]+rect_position_vis[2]),(rect_position_vis[1]+rect_position_vis[3])),Scalar(0,255,0),2);
-                //resize(im_to_show,im_to_show,dsize);
+                rectangle(im_to_show,Point(rect_position_vis[0] * (img_h / height),rect_position_vis[1] * (img_w / width)),Point((rect_position_vis[0]+rect_position_vis[2]) * (img_h / height),(rect_position_vis[1]+rect_position_vis[3]) * (img_w / width)),Scalar(0,255,0),2);
+                //rectangle(im_to_show,Point(rect_position_vis[0],rect_position_vis[1]),Point((rect_position_vis[0]+rect_position_vis[2]),(rect_position_vis[1]+rect_position_vis[3])),Scalar(0,255,0),2);
+                resize(im_to_show,im_to_show,Size(show_w,show_h));
                 imshow("Tracking",im_to_show);
                 waitKey(0);
 
             }
             else{
                 //putText(im_to_show,"FPS: " + to_string(time) ,      Point(20,40),  FONT_HERSHEY_COMPLEX ,       0.5,Scalar(0,255,0));
-                rectangle(im_to_show,Point(rect_position_vis[0],rect_position_vis[1]),Point((rect_position_vis[0]+rect_position_vis[2]),(rect_position_vis[1]+rect_position_vis[3])),Scalar(0,255,0),2);
-                //resize(im_to_show,im_to_show,dsize);
+                rectangle(im_to_show,Point(rect_position_vis[0] * (img_h / height),rect_position_vis[1] * (img_w / width)),Point((rect_position_vis[0]+rect_position_vis[2]) * (img_h / height),(rect_position_vis[1]+rect_position_vis[3]) * (img_w / width)),Scalar(0,255,0),2);
+                //rectangle(im_to_show,Point(rect_position_vis[0],rect_position_vis[1]),Point((rect_position_vis[0]+rect_position_vis[2]),(rect_position_vis[1]+rect_position_vis[3])),Scalar(0,255,0),2);
+                resize(im_to_show,im_to_show,Size(show_w,show_h));
                 imshow("Tracking",im_to_show);
                 waitKey(1);
 
@@ -945,6 +1000,39 @@ void BACF_optimized(parameters &params,track_result &results){
     return result;
 
 }*/
+
+Mat BGR2RGB(Mat &im){
+    vector <Mat> src;
+
+    split(im,src);
+
+    vector <Mat> result(3);
+    result.at(0) = src.at(2);
+    result.at(1) = src.at(1);
+    result.at(2) = src.at(0);
+
+    Mat img;
+    merge(result,img);
+
+    return img;
+}
+
+Mat RGB2BGR(Mat &im){
+    vector <Mat> src;
+
+    split(im,src);
+
+    vector <Mat> result(3);
+    result.at(0) = src.at(2);
+    result.at(1) = src.at(1);
+    result.at(2) = src.at(0);
+
+    Mat img;
+    merge(result,img);
+
+    return img;
+}
+
 
 Mat QT_M_mul_M(Mat &M_Src1,Mat &M_Src2){
 

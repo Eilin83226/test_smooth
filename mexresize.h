@@ -6,6 +6,6 @@
 using namespace std;
 using namespace cv;
 
-Mat mexResize(Mat &im_patch,double resize_target[],string interp);
+Mat mexResize(Mat &im_patch,vector <double> &resize_target,string interp);
 
 #endif // MEXRESIZE_H

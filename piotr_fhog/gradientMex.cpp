@@ -89,24 +89,9 @@ void gradMag( float *I, float *M, float *O, int h, int w, int d, bool full ) {
       if(O) _Gx[y] = MUL( MUL(_Gx[y],_m), SET(acMult) );
       if(O) _Gx[y] = XOR( _Gx[y], AND(_Gy[y], SET(-0.f)) );
     };
-    memcpy( M+x*h, M2, h*sizeof(float) );//cout<<"89_gra"<<endl;
+    memcpy( M+x*h, M2, h*sizeof(float) );
     // compute and store gradient orientation (O) via table lookup
-    //cout<<"x ,y ,h = [" <<x<<","<<y<<","<<h<<"]"<<endl;
-    if( O!=0 ) for( y=0; y<h; y++ ) {
-        //cout<<"x ,y ,h = [" <<x<<","<<y<<","<<h<<"]"<<endl;
-        O[x*h+y] = acost[(int)Gx[y]];
-        //cout<<"x ,y ,h = [" <<x<<","<<y<<","<<h<<"] : (int)Gx["<<y<<"]="<<(int)Gx[y]<<", acost["<<(int)Gx[y]<<"]="<<acost[(int)Gx[y]]<<endl;
-        //cout<<"O["<<x*h+y<<"]="<<O[x*h+y]<<" ";
-        /*if((int)Gx[y] < -10010){
-            O[x*h+y] = 1.5708;
-            cout<<"y1 = "<<y<<", x*h+y = "<<x*h+y<<", Gx["<<y<<"]="<<Gx[y]<<", O["<<(int)Gx[y]<<"]="<<O[x*h+y]<<endl;
-        }
-        else{
-            O[x*h+y] = acost[(int)Gx[y]];
-            cout<<"y2 = "<<y<<", x*h+y = "<<x*h+y<<", Gx["<<y<<"]="<<Gx[y]<<", acost["<<(int)Gx[y]<<"]="<<acost[(int)Gx[y]]<<endl;
-        }*/
-    }//cout<<endl;
-    //cout<<"93_gra"<<endl;
+    if( O!=0 ) for( y=0; y<h; y++ ) O[x*h+y] = acost[(int)Gx[y]];
     if( O!=0 && full ) {
       y1=((~size_t(O+x*h)+1)&15)/4; y=0;
       for( ; y<y1; y++ ) O[y+x*h]+=(Gy[y]<0)*PI;

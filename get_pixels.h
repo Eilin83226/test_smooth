@@ -8,5 +8,5 @@
 using namespace cv;
 using namespace std;
 
-Mat get_pixels(Mat &im,double pos[],double sz[],double resize_target[]);
+Mat get_pixels(Mat &im,double pos[],vector <double> &sz,vector <double> &resize_target);
 #endif // GET_PIXELS_H

@@ -38,7 +38,7 @@ void load_video_info(string video_path,image_info *seq,vector <vector <double> >
 
     //--img_files = dir(fullfile(img_path, '*.jpg'));
     //--img_files = {img_files.name};
-    img_path = "C://Users//Eilin//Documents//MATLAB//BACF//BACF_toUpload//seq//test//test_426x240_bmp//";
+    img_path = "C://Users//Eilin//Documents//MATLAB//BACF//BACF_toUpload//seq//test//test2_853x480//";
     getdir(img_path, (*seq).s_frame);
 }
 

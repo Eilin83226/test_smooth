@@ -33,11 +33,11 @@ SOURCES += \
     mexresize.cpp \
     get_features.cpp \
     get_fhog.cpp \
-    piotr_fhog/gradientMex.cpp \
     get_subwindow_no_window.cpp \
     resizedft2.cpp \
     resp_newton.cpp \
-    test.cpp
+    test.cpp \
+    piotr_fhog/gradientMex.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -49,24 +49,21 @@ HEADERS += \
     get_features.h \
     get_fhog.h \
     fhog.hpp \
-    piotr_fhog/fhog.hpp \
-    piotr_fhog/gradientMex.h \
-    piotr_fhog/sse.hpp \
-    piotr_fhog/wrappers.hpp \
-    FHOG-master/pdollar/fhog.h \
-    FHOG-master/pdollar/sse.hpp \
-    FHOG-master/pdollar/SSE2NEON.h \
     get_subwindow_no_window.h \
     resizedft2.h \
     resp_newton.h \
-    test.h
+    test.h \
+    piotr_fhog/fhog.hpp \
+    piotr_fhog/gradientMex.h \
+    piotr_fhog/sse.hpp \
+    piotr_fhog/wrappers.hpp
 
 FORMS += \
         mainwindow.ui
 
-INCLUDEPATH += E:/opencv_build_vs2013/install/include/opencv
-INCLUDEPATH += E:/opencv_build_vs2013/install/include/opencv2
-INCLUDEPATH += E:/opencv_build_vs2013/install/include
+INCLUDEPATH += C:/Users/Eilin/Downloads/opencv/build/include/opencv
+INCLUDEPATH += C:/Users/Eilin/Downloads/opencv/build/include/opencv2
+INCLUDEPATH += C:/Users/Eilin/Downloads/opencv/build/include
 INCLUDEPATH += C:/Qt/5.5/msvc2013_64/include
 INCLUDEPATH += E:/mexopencv-master/include
 INCLUDEPATH += E:/Robust-View-Graph-SLAM-master/matlab/include
@@ -97,23 +94,23 @@ win32: LIBS+=-LC:/Matlab2015b/extern/lib/win64/microsoft -llibmwblas
 #INCLUDEPATH += $$PWD/mtimesx/for_redistribution_files_only
 #DEPENDPATH += $$PWD/mtimesx/for_redistribution_files_only
 
-LIBS+=-LE:/opencv_build_vs2013/install/x64/vc12/lib -lopencv_calib3d341
-LIBS+=-LE:/opencv_build_vs2013/install/x64/vc12/lib -lopencv_core341
-LIBS+=-LE:/opencv_build_vs2013/install/x64/vc12/lib -lopencv_dnn341
-LIBS+=-LE:/opencv_build_vs2013/install/x64/vc12/lib -lopencv_features2d341
-LIBS+=-LE:/opencv_build_vs2013/install/x64/vc12/lib -lopencv_flann341
-LIBS+=-LE:/opencv_build_vs2013/install/x64/vc12/lib -lopencv_highgui341
-LIBS+=-LE:/opencv_build_vs2013/install/x64/vc12/lib -lopencv_imgcodecs341
-LIBS+=-LE:/opencv_build_vs2013/install/x64/vc12/lib -lopencv_imgproc341
-LIBS+=-LE:/opencv_build_vs2013/install/x64/vc12/lib -lopencv_ml341
-LIBS+=-LE:/opencv_build_vs2013/install/x64/vc12/lib -lopencv_objdetect341
-LIBS+=-LE:/opencv_build_vs2013/install/x64/vc12/lib -lopencv_photo341
-LIBS+=-LE:/opencv_build_vs2013/install/x64/vc12/lib -lopencv_shape341
-LIBS+=-LE:/opencv_build_vs2013/install/x64/vc12/lib -lopencv_stitching341
-LIBS+=-LE:/opencv_build_vs2013/install/x64/vc12/lib -lopencv_superres341
-LIBS+=-LE:/opencv_build_vs2013/install/x64/vc12/lib -lopencv_video341
-LIBS+=-LE:/opencv_build_vs2013/install/x64/vc12/lib -lopencv_videoio341
-LIBS+=-LE:/opencv_build_vs2013/install/x64/vc12/lib -lopencv_videostab341
+LIBS+=-LC:/Users/Eilin/Downloads/opencv/build/x64/vc12/lib -lopencv_calib3d2410
+LIBS+=-LC:/Users/Eilin/Downloads/opencv/build/x64/vc12/lib -lopencv_core2410
+#LIBS+=-LC:/Users/Eilin/Downloads/opencv/build/x64/vc12/lib -lopencv_dnn2410
+LIBS+=-LC:/Users/Eilin/Downloads/opencv/build/x64/vc12/lib -lopencv_features2d2410
+LIBS+=-LC:/Users/Eilin/Downloads/opencv/build/x64/vc12/lib -lopencv_flann2410
+LIBS+=-LC:/Users/Eilin/Downloads/opencv/build/x64/vc12/lib -lopencv_highgui2410
+#LIBS+=-LC:/Users/Eilin/Downloads/opencv/build/x64/vc12/lib -lopencv_imgcodecs2410
+LIBS+=-LC:/Users/Eilin/Downloads/opencv/build/x64/vc12/lib -lopencv_imgproc2410
+LIBS+=-LC:/Users/Eilin/Downloads/opencv/build/x64/vc12/lib -lopencv_ml2410
+LIBS+=-LC:/Users/Eilin/Downloads/opencv/build/x64/vc12/lib -lopencv_objdetect2410
+LIBS+=-LC:/Users/Eilin/Downloads/opencv/build/x64/vc12/lib -lopencv_photo2410
+#LIBS+=-LC:/Users/Eilin/Downloads/opencv/build/x64/vc12/lib -lopencv_shape2410
+LIBS+=-LC:/Users/Eilin/Downloads/opencv/build/x64/vc12/lib -lopencv_stitching2410
+LIBS+=-LC:/Users/Eilin/Downloads/opencv/build/x64/vc12/lib -lopencv_superres2410
+LIBS+=-LC:/Users/Eilin/Downloads/opencv/build/x64/vc12/lib -lopencv_video2410
+#LIBS+=-LC:/Users/Eilin/Downloads/opencv/build/x64/vc12/lib -lopencv_videoio2410
+LIBS+=-LC:/Users/Eilin/Downloads/opencv/build/x64/vc12/lib -lopencv_videostab2410
           -lGdi32
 
 

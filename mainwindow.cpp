@@ -15,8 +15,9 @@
 //#include "mexopencv.hpp"
 #include "test.h"
 #include <opencv2/opencv.hpp>
-#include <opencv2/tracking.hpp>
 #include <iostream>
+#include <opencv2/highgui/highgui.hpp>
+#include "piotr_fhog/fhog.hpp"
 
 #define resolution_width 3840
 #define resolution_height 2160
@@ -48,19 +49,26 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
 
-//    Mat a(5,5,CV_32FC2,Scalar(3,1));
-//    vector <Mat> dd;
-//    dd.push_back(a);
-//    Rect roi(2,2,2,2);
-//    Mat c(2,2,CV_32FC2,Scalar(0,0));
-//    //dd.at(0)(roi).copyTo(c);
-//    addWeighted(a(roi),0,c,1,0,a(roi));
-//    cout<<a<<endl;
-//    cout<<c<<endl;
-//    c.at<Vec2f>(0,0)[0] = 8;
-//    c.at<Vec2f>(0,0)[1] = 9;
-//    cout<<a<<endl;
-//    cout<<c<<endl;
+
+//    Mat a(5,5,CV_32FC2,Scalar(3.2,1.2));
+//    a.at<Vec2f>(2,2)[0] = 2.2;
+//    a.at<Vec2f>(2,2)[0] = 1.5;
+//    Mat c(5,5,CV_32FC2,Scalar(4.1,3.5));
+//    c.at<Vec2f>(2,2)[0] = 2.2;
+//    c.at<Vec2f>(2,2)[0] = 1.5;
+//    Mat e(5,5,CV_32F,Scalar(3.2));
+//    Mat e1(5,5,CV_32FC2,Scalar(3.2,0));
+
+//    Mat ans = a+c+e;
+//    cout<<ans<<endl;
+//    Mat ans1 = a+c+e1;
+//    cout<<ans1<<endl;
+//    cout<<(-1)*c + a<<endl;
+//    Mat d;
+//    add((-1)*c,a,d);
+//    cout<<d<<endl;
+
+
 
 //    vector <Mat> a;
 //    Mat c(3,3,CV_32F,Scalar(2));
