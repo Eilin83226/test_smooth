@@ -23,6 +23,7 @@ const double img_h = 480;
 const double show_w = 640;
 const double show_h = 480;
 
+
 void BACF_optimized(parameters &params,track_result &results);
 template<typename ty>
 void circshift(ty &out, const ty &in, int xdim, int ydim, int xshift, int yshift);

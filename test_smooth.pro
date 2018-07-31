@@ -37,7 +37,9 @@ SOURCES += \
     resizedft2.cpp \
     resp_newton.cpp \
     test.cpp \
-    piotr_fhog/gradientMex.cpp
+    piotr_fhog/gradientMex.cpp \
+    thread_bacf_tracking.cpp \
+    widget.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -56,7 +58,9 @@ HEADERS += \
     piotr_fhog/fhog.hpp \
     piotr_fhog/gradientMex.h \
     piotr_fhog/sse.hpp \
-    piotr_fhog/wrappers.hpp
+    piotr_fhog/wrappers.hpp \
+    thread_bacf_tracking.h \
+    widget.h
 
 FORMS += \
         mainwindow.ui

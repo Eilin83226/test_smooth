@@ -5,6 +5,7 @@
 #include "bacf_optimized.h"
 
 #include "resp_newton.h"
+#include "widget.h"
 
 //#include "mclmcr.h" // mwArray聲明
 //#include "mtimesx.c"
