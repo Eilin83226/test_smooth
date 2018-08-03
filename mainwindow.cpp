@@ -1,8 +1,9 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "load_video_info.h"
-#include "run_bacf.h"
-#include "bacf_optimized.h"
+//#include "load_video_info.h"
+//#include "run_bacf.h"
+//#include "bacf_optimized.h"
+#include "thread_bacf_tracking.h"
 
 #include "resp_newton.h"
 #include "widget.h"
@@ -29,16 +30,36 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     //%   Load video information
-    string base_path = "C:/Users/Eilin/Documents/MATLAB/BACF/BACF_toUpload/seq";
-    string video = "test";
-    string video_path = base_path +"/"+ video;
+//    string base_path = "C:/Users/Eilin/Documents/MATLAB/BACF/BACF_toUpload/seq";
+//    string video = "test";
+//    string video_path = base_path +"/"+ video;
 
     //設定ground_truth
-    load_video_info(video_path,&seq,&ground_truth);
+    //load_video_info(video_path,&seq,&ground_truth);
 
-    seq.VidName = video;
-    seq.st_frame = 1;
-    seq.en_frame = seq.len;
+    //-----start:初始化bounding box-----//
+    ifstream fin;
+    //--ground_truth = dlmread([video_path '/groundtruth_rect.txt']);
+    string ground_truth_path = "C:/Users/Eilin/Documents/MATLAB/BACF/BACF_toUpload/seq/test/groundtruth_rect.txt";
+    fin.open(ground_truth_path.c_str());
+    char temp[30];
+    fin.getline(temp,30);
+
+    const char *delim = ",";
+    char *pch;
+    pch = strtok(temp,delim);
+    while(pch != NULL){
+        double num = atoi(pch);
+        init_rect.push_back(num);
+        pch = strtok(NULL, delim);
+    }
+
+    fin.close();
+    //-----end:初始化bounding box-----//
+
+//    seq.VidName = video;
+//    seq.st_frame = 1;
+//    seq.en_frame = seq.len;
     //--gt_boxes = [ground_truth(:,1:2), ground_truth(:,1:2) + ground_truth(:,3:4) - ones(size(ground_truth,1), 2)];
 
     //%   Run BACF- main function
@@ -46,302 +67,8 @@ MainWindow::MainWindow(QWidget *parent) :
     learning_rate = 0.005;
 
     //執行BACF追蹤演算法
-    run_BACF(seq,video_path,learning_rate,results);
+    run_BACF(init_rect,learning_rate,results);
 
-
-
-
-//    Mat a(5,5,CV_32FC2,Scalar(3.2,1.2));
-//    a.at<Vec2f>(2,2)[0] = 2.2;
-//    a.at<Vec2f>(2,2)[0] = 1.5;
-//    Mat c(5,5,CV_32FC2,Scalar(4.1,3.5));
-//    c.at<Vec2f>(2,2)[0] = 2.2;
-//    c.at<Vec2f>(2,2)[0] = 1.5;
-//    Mat e(5,5,CV_32F,Scalar(3.2));
-//    Mat e1(5,5,CV_32FC2,Scalar(3.2,0));
-
-//    Mat ans = a+c+e;
-//    cout<<ans<<endl;
-//    Mat ans1 = a+c+e1;
-//    cout<<ans1<<endl;
-//    cout<<(-1)*c + a<<endl;
-//    Mat d;
-//    add((-1)*c,a,d);
-//    cout<<d<<endl;
-
-
-
-//    vector <Mat> a;
-//    Mat c(3,3,CV_32F,Scalar(2));
-//    Mat d = Mat::zeros(3,3,CV_32F);
-//    a.push_back(c.mul(3));
-//    a.push_back(c.mul(3));
-//    //a.assign(3,d.clone());
-//    cout<<a.at(0)<<endl;
-//    cout<<a.at(1)<<endl;
-//    //cout<<a.at(2)<<endl;
-//    a.at(0).at<float>(0,0) = 1;
-//    cout<<a.at(0)<<endl;
-//    cout<<a.at(1)<<endl;
-//    //cout<<a.at(2)<<endl;
-
-
-
-//    vector <Mat> Src1;
-//    Mat d(3,3,CV_32F,Scalar(2));
-//    Mat f(3,3,CV_32F,Scalar(2));
-//    //d.at<Vec2f>(0,0)[1] = 1.1;
-//    //d.at<Vec2f>(0,1)[1] = 2.2;
-//    d.at<float>(0,1) = 1;
-//    d.at<float>(1,0) = 1;
-//    d.at<float>(2,1) = 5;
-//    d.at<float>(2,0) = 5;
-//    cout<<d<<endl;
-//    double maxVal1;
-//    Point maxLoc1;
-//    double minVal;
-//    Point minLoc;
-//    minMaxLoc(d, &minVal, &maxVal1, &minLoc, &maxLoc1);
-//    cout<<maxVal1<<","<<maxLoc1<<endl;
-//    cout<<minVal<<","<<minLoc<<endl;
-//    cout<<d.at<float>(maxLoc1.y,maxLoc1.x)<<","<<d.at<float>(minLoc.y,minLoc.x)<<endl;
-//    Src1.push_back(d);
-//    f.at<float>(2,0) = 6;
-//    Src1.push_back(f);
-
-
-//    double maxVal = -10000;
-//    Point maxLoc;
-//    int dim_max = -1;
-//    for(int n = 0 ; n <Src1.size() ; ++n){cout<<Src1.at(n)<<endl;
-//        double maxV;
-//        Point maxL;
-//        //opencv找出的最大值是以列為主，因此需要找以行為主最大值的座標
-//        minMaxLoc(Src1.at(n),0,&maxV,0,&maxL);
-//        if(maxVal < maxV){
-//            dim_max = n;
-//            maxVal = maxV;
-//            maxLoc = maxL;
-//        }
-//    }
-//    bool find = false;
-//    for(int j = 0 ; j < maxLoc.x  ; ++j){
-//        for(int  i = maxLoc.y ; i < Src1.at(dim_max).rows ; ++i){
-//            if(maxVal == Src1.at(dim_max).at<float>(i,j)){
-//                maxLoc.x = j;
-//                maxLoc.y = i;
-//                find = true;
-//                break;
-//            }
-//        }
-//        if(find){
-//            break;
-//        }
-//    }
-//    cout<<dim_max<<","<<maxVal<<","<<maxLoc<<endl;
-
-
-//    Mat k;
-//    k = Src1.at(0).mul(-1);
-//    cout<<k<<endl;
-
-//    vector <Mat> Src2;
-//    Mat e(1,1,CV_32FC2,Scalar(0));
-//    //e.at<Vec2f>(0,0)[0] = 2;
-//    //e.at<Vec2f>(0,0)[1] = 1.1;
-//    //e.at<Vec2f>(0,1)[1] = 1.1;
-//    cout<<e<<endl;
-//    Src2.push_back(e);
-//    Src2.push_back(e);
-
-//    vector <Mat> g;
-//    g = exp_bsx(d,Src2);
-//    cout<<g.at(0)<<endl;
-
-
-//    vector <Mat> ans;
-//    ans = bsx_time(e,Src1);
-//    cout<<"ans = "<<endl;
-//    for(int n = 0 ; n < ans.size() ; ++n){
-//        cout<<ans.at(n)<<endl;
-//    }
-
-//    vector <Mat> ans1;
-//    ans1 = mulMatrix(Src2,Src1);
-//    cout<<"ans = "<<endl;
-//    for(int n = 0 ; n < ans1.size() ; ++n){
-//        cout<<ans1.at(n)<<endl;
-//    }
-
-
-    //cv::Mat a(3,3,CV_8U,Scalar(255));
-    //mxArray *x = ocvMxArrayFromImage_uint8(a);
-    //x = ocvMxArrayFromImage
-
-/*    Mat c = Mat::zeros(2,2,CV_64F);
-    Mat d = Mat::ones(2,2,CV_64F);
-    Mat g(2,2,CV_64F,Scalar(2));
-    Mat e(2,2,CV_32F,Scalar(1.1));
-    Mat f = Mat::zeros(2,2,CV_32FC2);
-    c.at<double>(0,0) = 1.3;
-    c.at<double>(0,1) = 2.5534;
-
-
-    c.at<double>(1,0) = 3.1;
-    c.at<double>(1,1) = 4.5;
-    //d = c.mul(e);
-    float dd = c.at<double>(0,1) * e.at<float>(1,1);
-    cout<<dd<<endl;
-    //MxArray x ;
-    //Resize(MxArray(d),MxArray(c),"auto",x);
-
-
-/*
-    vector <int> a[2];
-    a[0].push_back(1);
-    a[0].push_back(2);
-    a[0].push_back(3);
-    a[1].push_back(1);
-    a[1].push_back(2);
-    a[1].push_back(3);
-    Mat max_row_perm = Mat::zeros(a[0].size(),2,CV_64F);
-    for(int i = 0 ; i < max_row_perm.rows ; ++i){
-        for(int j = 0 ; j < max_row_perm.cols ; ++j){
-            max_row_perm.at<double>(i,j) = (double)a[j].at(i);
-            cout<<max_row_perm.at<double>(i,j)<<" ";
-        }cout<<endl;
-    }
-*/
-/*
-    complex <double> comp(1.1,2.2);
-    vector <Mat> x,y;
-    Mat c = Mat::zeros(2,2,CV_64F);
-    Mat d = Mat::zeros(2,2,CV_32FC2);
-    Mat e = Mat::zeros(2,2,CV_32FC2);
-    Mat f = Mat::zeros(2,2,CV_32FC2);
-    e = Scalar(1);
-    c.at<double>(0,0) = 1;
-    //c.at<Vec2f>(0,0)[1] = 0;
-    c.at<double>(0,1) = 0.26359;
-    //c.at<Vec2f>(0,1)[1] = 0;
-    c.at<double>(1,0) = 0.00482;
-    //c.at<Vec2f>(1,0)[1] = 0;
-    c.at<double>(1,1) = 5;
-    //c.at<Vec2f>(1,1)[1] = 0;
-
-    exp(c,d);
-
-    e.at<Vec2f>(0,0)[0] = 0;
-    e.at<Vec2f>(0,0)[1] = 0;
-    e.at<Vec2f>(0,1)[0] = 2;
-    e.at<Vec2f>(0,1)[1] = 2;
-    e.at<Vec2f>(1,0)[0] = 3;
-    e.at<Vec2f>(1,0)[1] = 3;
-    e.at<Vec2f>(1,1)[0] = 4;
-    e.at<Vec2f>(1,1)[1] = 4;
-
-    exp(e,f);
-    //d = c.mul(e);
-    //f = e*c;
-    //d = c.mul(e);
-    //fft2(c,f);
-    //dft(c,d,DFT_COMPLEX_OUTPUT);
-    //dft(e,f,DFT_COMPLEX_OUTPUT);
-    //idft(e, f, DFT_COMPLEX_OUTPUT+DFT_SCALE, 0);
-    for(int i = 0 ; i < 2 ; ++i){
-        for(int j = 0 ; j < 2 ; ++j){
-            //d = d + c;
-            cout<<d.at<Vec2d>(i,j)[0]<<","<<d.at<Vec2d>(i,j)[1]<<" ";
-            //cout<<d.at<float>(i,j)<<" ";
-        }cout<<endl;
-    }x.push_back(d.clone());
-    for(int i = 0 ; i < 2 ; ++i){
-        for(int j = 0 ; j < 2 ; ++j){
-            cout<<f.at<Vec2f>(i,j)[0]*cos(e.at<Vec2f>(i,j)[1])<<","<<f.at<Vec2f>(i,j)[1]*sin(e.at<Vec2f>(i,j)[0])<<" ";
-            //cout<<x[0].at<Vec2f>(i,j)[0]<<","<<x[0].at<Vec2f>(i,j)[1]<<" ";
-        }cout<<endl;
-    }
-
-    //cout<<d.at<Vec2f>(1,1)[0]<<" "<<d.at<Vec2f>(1,1)[1]<<endl;
-
-/*
-    Mat a = Mat::zeros(3, 3, CV_32FC2);
-    Mat b = Mat::zeros(3, 3, CV_32FC2);
-    Mat c = Mat::zeros(3, 3, CV_64F);
-
-
-     c.at<double>(0,0) = 1;
-     c.at<double>(0,1) = 2;
-     c.at<double>(0,2) = 3;
-
-     c.at<double>(1,0) = 4;
-     c.at<double>(1,1) = 5;
-     c.at<double>(1,2) = 6;
-
-     c.at<double>(2,0) = 7;
-     c.at<double>(2,1) = 8;
-     c.at<double>(2,2) = 9;
-
-    //idft(a, b, DFT_COMPLEX_OUTPUT+DFT_SCALE, 0);
-    //idft(a, c, DFT_REAL_OUTPUT+DFT_SCALE, 0);
-    //dft(c,b,DFT_COMPLEX_OUTPUT);
-     fft2(c,b);
-    for(int i = 0 ; i < 3 ; ++i){
-        for(int j = 0 ; j < 3 ; ++j){
-            cout<<b.at<Vec2f>(i,j)[0]<<","<<b.at<Vec2f>(i,j)[1]<<" ";
-            //cout<<b.at<Vec2f>(i,j)<<endl;
-        }cout<<endl;
-    }
-    for(int i = 0 ; i < 3 ; ++i){
-        for(int j = 0 ; j < 3 ; ++j){
-            cout<<c.at<double>(i,j)<<" ";
-        }cout<<endl;
-    }
-
-    /*const int size[3] = {4,3,5};
-    Mat a[3];
-    for(int i = 0 ; i < 3 ; ++i){
-        a[i].create(3,size,CV_32F);
-        a[i] = Scalar(0);
-    }*/
-
-//    Mat b = Mat::ones(2, 2, CV_32FC2);
-//    Mat e = Mat::zeros(2, 2, CV_32FC2);
-//    Mat c(2,2,CV_32FC2,Scalar(3.154,1.124)),d(2,2,CV_32FC2,Scalar(3.2143,2.3458));
-//    Mat f;
-//    c.at<Vec2f>(0,0)[0] = 1;
-//    c.at<Vec2f>(0,0)[1] = 1;
-//    c.at<Vec2f>(0,1)[0] = 2;
-//    c.at<Vec2f>(0,1)[1] = 2;
-//    c.at<Vec2f>(1,0)[0] = 3;
-//    c.at<Vec2f>(1,0)[1] = 3;
-//    c.at<Vec2f>(1,1)[0] = 4;
-//    c.at<Vec2f>(1,1)[1] = 4;
-//    d.at<Vec2f>(0,0)[1] = c.at<Vec2f>(1,1)[1] + b.at<Vec2f>(1,1)[1];
-//    cout<<"c = "<<endl;
-//    cout<<c<<endl;
-//    cout<<"b = "<<endl;
-//    cout<<d<<endl;
-//    f = c.mul(10);
-//    cout<<f<<endl;
-//    f = c / b;
-//    cout<<f<<endl;
-
-
-
-
-
-//    vector <Mat> src1,src2,src;
-//    src1.push_back(c);
-////    src2.push_back(d);
-////    src2.push_back(d);
-////    src2.push_back(d);
-////    src2.push_back(d);
-//    src2 = QT_conj(src1);
-//    src = QT_matrix_mul(src1,src2);
-//    cout<<src.at(0)<<endl;
-    //add(2,c,d);
-//cout<<d.at<Vec2f>(1,1)[1]<<","<<c.at<Vec2f>(1,1)[1]<<","<<b.at<Vec2f>(1,1)[1]<<endl;
 
 
 
@@ -351,4 +78,209 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+
+//讀groundtruth_rect.txt取得BundingBox
+void MainWindow::load_video_info(string video_path,image_info *seq,vector <vector <double> > *ground_truth){
+    ifstream fin;
+    //--ground_truth = dlmread([video_path '/groundtruth_rect.txt']);
+    string ground_truth_path = video_path+"/groundtruth_rect.txt";
+    fin.open(ground_truth_path.c_str());
+    char temp[30];
+    vector <double> rect;
+    while(fin.getline(temp,30)){
+        //--seq.len = size(ground_truth, 1);
+
+        (*seq).len++;
+        const char *delim = ",";
+        char *pch;
+        pch = strtok(temp,delim);
+        while(pch != NULL){
+            double num = atoi(pch);
+            rect.push_back(num);
+            pch = strtok(NULL, delim);
+        }
+        (*ground_truth).push_back(rect);
+        rect.clear();
+    }
+    fin.close();
+
+    //--seq.init_rect = ground_truth(1,:);
+    for(int i = 0 ; i < 4 ; ++i){
+        (*seq).init_rect[i] = (*ground_truth)[0][i];
+    }
+
+    //--img_path = [video_path '/img/'];
+    string img_path;
+    //img_path = video_path+"/img/";
+
+    //--img_files = dir(fullfile(img_path, '*.jpg'));
+    //--img_files = {img_files.name};
+    img_path = "C://Users//Eilin//Documents//MATLAB//BACF//BACF_toUpload//seq//test//test2_853x480//";
+    getdir(img_path, (*seq).s_frame);
+}
+
+//取得資料夾內所有檔案
+int MainWindow::getdir(string dir, vector<string> &files){
+    DIR *dp;//創立資料夾指標
+    struct dirent *dirp;
+    if((dp = opendir(dir.c_str())) == NULL){
+        cout << "Error(" << errno << ") opening " << dir << endl;
+        return errno;
+    }
+    int ignore=2;
+    while((dirp = readdir(dp)) != NULL){//如果dirent指標非空
+        if(ignore==0){
+            files.push_back(string(dirp->d_name));//將資料夾和檔案名放入vector
+        }
+        else{//忽略.&..
+            ignore--;
+        }
+    }
+    closedir(dp);//關閉資料夾指標
+    //return 0;
+}
+
+void MainWindow::run_BACF(vector <double> init_rect,double lr,track_result &results){
+
+    //設置參數
+    //%   HOG feature parameters
+    hog_params.nDim.first = "nDim";
+    hog_params.nDim.second = 31;
+
+
+    //%   Grayscale feature parameters
+    grayscale_params.colorspace = "gray";
+    grayscale_params.nDim = 1;
+
+
+    //%   Global feature parameters
+    params.t_features.getFeature = make_pair("getFeature","@get_fhog");
+    params.t_features.fparams = make_pair("fparams",hog_params);
+
+
+    //%   Feature cell size
+    params.t_global.cell_size = make_pair("cell_size",4);
+    //%   Threshold for reducing the cell size in low-resolution cases
+    params.t_global.cell_selection_thresh = make_pair("cell_selection_thresh",pow(0.75,2));
+
+
+    //%   Search region + extended background parameters
+    //% the shape of the training/detection window: 'proportional', 'square' or 'fix_padding'
+    params.search_area_shape = "square";
+    //% the size of the training/detection area proportional to the target size
+    params.search_area_scale = 5;
+    //% the size of the training/detection area in feature grid cells
+    params.filter_max_area = pow(50,2);
+
+
+    //%   Learning parameters
+    //% learning rate
+    params.learning_rate = lr;
+    //% standard deviation of the desired correlation output (proportional to target)
+    params.output_sigma_factor = 1.0/16.0;
+
+
+    //%   Detection parameters
+    //% correlation score interpolation strategy: 0 - off, 1 - feature grid, 2 - pixel grid, 4 - Newton's method
+    params.interpolate_response = 4;
+    //% number of Newton's iteration to maximize the detection scores
+    params.newton_iterations = 50;
+
+
+    //%   Scale parameters
+    params.number_of_scales = 5;
+    params.scale_step = 1.01;
+
+
+    //%   size, position, frames initialization
+    //--params.wsize    = [seq.init_rect(1,4), seq.init_rect(1,3)];
+    params.wsize[0] = init_rect[3];
+    params.wsize[1] = init_rect[2];
+    params.init_pos[0] = init_rect[1] + floor(params.wsize[0]/2);
+    params.init_pos[1] = init_rect[0] + floor(params.wsize[1]/2);
+    //notice : 讀取camera後沒有frame數，整合的時候需要更動
+//    params.s_frame = seq.s_frame;
+//    params.no_fram = seq.en_frame - seq.st_frame + 1;
+//    params.seq_st_frame = seq.st_frame;
+//    params.seq_en_frame = seq.en_frame;
+    //notice : end
+
+    //%   ADMM parameters, # of iteration, and lambda- mu and betha are set in the main function.
+    params.admm_iterations = 2;
+    params.admm_lambda = 0.01;
+
+
+    //%   Debug and visualization
+    params.visualization = 1;
+
+    //BACF_optimized(params,results);
+    //thread_BACF_tracking trackinThread(params);
+    //trackinThread.start(QThread::TimeCriticalPriority);
+
+
+    //-----------------------------------------------------------------------
+    cap.open("C:/Users/Eilin/Desktop/testVideo/test2_640x480.mp4");
+    //cap.open(0);
+    if (!cap.isOpened()) {
+        cout << "video open fail!" << endl;
+        system("pause");
+    }
+    cout << "video open success!" << endl;
+
+    mytimer = new QTimer(this);
+    //showTime();
+    mytimer->start(1);                   //以1000毫秒為周期起動定時器
+
+    cout<<"first"<<endl;
+    connect(mytimer,SIGNAL(timeout()),this,SLOT(VideoCaptureSlot()));
+
+    thread_BACF_tracking *trackinThread = new thread_BACF_tracking(params ,&Input_im ,&frameLock ,&isEnd);
+    trackinThread->start(QThread::TimeCriticalPriority);
+
+    //Widget *w = new Widget(&Input_im ,&frameLock ,&isRun);
+    //w->start(QThread::TimeCriticalPriority);
+}
+
+void MainWindow::VideoCaptureSlot()
+{
+    //qDebug()<<"fuck";
+    for(int i = 0 ; i < 50; ++i){
+        if(!frameLock){
+            frameLock = true;
+            cout << "videoCaptureSlot start" <<endl;
+            cap >> read_im;
+            if( read_im.empty()){
+                cout << "video End." <<endl;
+                isEnd = true;
+                frameLock = false;
+
+                //停止Qtimer
+                mytimer->stop();
+
+                cap.release();
+                return;
+            }
+            //Input_im.push_back(read_im.clone());
+            Input_im.push(read_im.clone());
+            //total.push_back(read_im);
+            cout<<"Input_size = "<<Input_im.size()<<endl;
+            //cout<<"total = "<<total.size()<<endl;
+            cout << "videoCaptureSlot end" <<endl;
+
+            frameLock = false;
+//            if( read_im.empty()){
+//                cout << "End." <<endl;
+//                isRun = false;
+
+//                //return;
+//            }
+            //imshow("im",read_im);
+            //waitKey(1);
+            //cout<<"isRun = "<<isRun<<endl;
+            //isRun = true;
+            break;
+        }
+    }
 }

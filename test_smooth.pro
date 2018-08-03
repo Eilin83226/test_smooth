@@ -27,8 +27,8 @@ SOURCES += \
         main.cpp \
         mainwindow.cpp \
     load_video_info.cpp \
-    run_bacf.cpp \
-    bacf_optimized.cpp \
+    #run_bacf.cpp \
+    #bacf_optimized.cpp \
     get_pixels.cpp \
     mexresize.cpp \
     get_features.cpp \
@@ -39,13 +39,14 @@ SOURCES += \
     test.cpp \
     piotr_fhog/gradientMex.cpp \
     thread_bacf_tracking.cpp \
-    widget.cpp
+    widget.cpp \
+    func.cpp
 
 HEADERS += \
         mainwindow.h \
     load_video_info.h \
-    run_bacf.h \
-    bacf_optimized.h \
+    #run_bacf.h \
+    #bacf_optimized.h \
     get_pixels.h \
     mexresize.h \
     get_features.h \
@@ -60,7 +61,8 @@ HEADERS += \
     piotr_fhog/sse.hpp \
     piotr_fhog/wrappers.hpp \
     thread_bacf_tracking.h \
-    widget.h
+    widget.h \
+    func.h
 
 FORMS += \
         mainwindow.ui

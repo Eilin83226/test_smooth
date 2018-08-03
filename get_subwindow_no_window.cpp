@@ -1,4 +1,5 @@
 #include "get_subwindow_no_window.h"
+#include "func.h"
 
 void get_subwindow_no_window(vector <Mat> &im,vector <int> &pos,vector <int> &sz,vector <int> &yys,vector <int> &xxs){
 //    %GET_SUBWINDOW Obtain sub-window from image, with replication-padding.

@@ -1,5 +1,5 @@
 #include "resizedft2.h"
-
+#include "func.h"
 
 void resizeDFT2(vector <Mat> &inputdft,int desiredSize[],vector <Mat> &resizeddft){
 //    [imh, imw, n1, n2] = size(inputdft);

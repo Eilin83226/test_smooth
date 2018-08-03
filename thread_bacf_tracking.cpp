@@ -4,297 +4,281 @@
 #include "get_subwindow_no_window.h"
 #include "resizedft2.h"
 #include "resp_newton.h"
-#include "bacf_optimized.h"
+//#include "bacf_optimized.h"
+#include "func.h"
 
 #define FPS 15
 
-thread_BACF_tracking::thread_BACF_tracking(parameters &tparams){
+thread_BACF_tracking::thread_BACF_tracking(parameters &tparams ,queue <Mat> *tInput_im ,bool *tFrameLock ,bool *tIsEnd):params(tparams),Input_im(tInput_im),FrameLock(tFrameLock),isEnd(tIsEnd){
 
-//    params = tparams;
-//    //%   Setting parameters for local use.
-//    double search_area_scale = params.search_area_scale;
-//    double output_sigma_factor = params.output_sigma_factor;
-//    learning_rate = params.learning_rate;
-//    double filter_max_area = params.filter_max_area;
-//    nScales = params.number_of_scales;
-//    double scale_step = params.scale_step;
-//    interpolate_response = params.interpolate_response;
+    //%   Setting parameters for local use.
+    double search_area_scale = params.search_area_scale;
+    double output_sigma_factor = params.output_sigma_factor;
+    learning_rate = params.learning_rate;
+    double filter_max_area = params.filter_max_area;
+    nScales = params.number_of_scales;
+    double scale_step = params.scale_step;
+    interpolate_response = params.interpolate_response;
 
 
-//    features = params.t_features;
-//    //notice : 讀取camera後沒有frame數，整合的時候需要更動
+    features = params.t_features;
+    //notice : 讀取camera後沒有frame數，整合的時候需要更動
 //    video_path  = params.video_path;
 //    s_frames = params.s_frame;
-//    //notice : end
+    //notice : end
 
-//    pos[0] = floor((params.init_pos[0] * height) / img_h);
-//    pos[1] = floor((params.init_pos[1] * width) / img_w);
+    pos[0] = floor((params.init_pos[0] * height) / img_h);
+    pos[1] = floor((params.init_pos[1] * width) / img_w);
 
-//    target_sz[0] = floor((params.wsize[0] * height) / img_h);
-//    target_sz[1] = floor((params.wsize[1] * width) / img_w);
-
-
-//    visualization = params.visualization;
-
-//    double init_target_sz[2];
-//    init_target_sz[0] = target_sz[0];
-//    init_target_sz[1] = target_sz[1];
+    target_sz[0] = floor((params.wsize[0] * height) / img_h);
+    target_sz[1] = floor((params.wsize[1] * width) / img_w);
 
 
-//    //%set the feature ratio to the feature-cell size
-//    featureRatio = params.t_global.cell_size.second;
-//    double search_area,temp[2];
-//    for(int i = 0 ; i < 2 ; ++i){
-//        temp[i] = init_target_sz[i] / featureRatio * search_area_scale;
-//    }
-//    search_area = temp[0] * temp[1];
+    visualization = params.visualization;
+
+    double init_target_sz[2];
+    init_target_sz[0] = target_sz[0];
+    init_target_sz[1] = target_sz[1];
 
 
-
-//    //% when the number of cells are small, choose a smaller cell size
-//    if (params.t_global.cell_selection_thresh.first == "cell_selection_thresh"){
-//        if(search_area < params.t_global.cell_selection_thresh.second * filter_max_area){
-//            double prod_val = (init_target_sz[0] * search_area_scale) * (init_target_sz[1] * search_area_scale);
-//            params.t_global.cell_size.second = min(featureRatio, max(1, (int)ceil(sqrt(prod_val/(params.t_global.cell_selection_thresh.second * filter_max_area)))));
-
-//            featureRatio = params.t_global.cell_size.second;
-//            search_area = (init_target_sz[0] / featureRatio * search_area_scale) * (init_target_sz[1] / featureRatio * search_area_scale);
-//        }
-//    }
-
-
-//    global_feat_params = params.t_global;
+    //%set the feature ratio to the feature-cell size
+    featureRatio = params.t_global.cell_size.second;
+    double search_area,temp[2];
+    for(int i = 0 ; i < 2 ; ++i){
+        temp[i] = init_target_sz[i] / featureRatio * search_area_scale;
+    }
+    search_area = temp[0] * temp[1];
 
 
 
-//    currentScaleFactor;
-//    if(search_area > filter_max_area){
-//        currentScaleFactor = sqrt(search_area / filter_max_area);
-//    }
-//    else{
-//        currentScaleFactor = 1.0;
-//    }
+    //% when the number of cells are small, choose a smaller cell size
+    if (params.t_global.cell_selection_thresh.first == "cell_selection_thresh"){
+        if(search_area < params.t_global.cell_selection_thresh.second * filter_max_area){
+            double prod_val = (init_target_sz[0] * search_area_scale) * (init_target_sz[1] * search_area_scale);
+            params.t_global.cell_size.second = min(featureRatio, max(1, (int)ceil(sqrt(prod_val/(params.t_global.cell_selection_thresh.second * filter_max_area)))));
 
-
-//    //% target size at the initial scale
-//    base_target_sz[2];
-//    base_target_sz[0] = target_sz[0] / currentScaleFactor;
-//    base_target_sz[1] = target_sz[1] / currentScaleFactor;
-
-
-//    //% window size, taking padding into account
-//    if(params.search_area_shape == "proportional") {
-//        //% proportional area, same aspect ratio as the target
-//        sz.push_back(floor(base_target_sz[0] * search_area_scale));
-//        sz.push_back(floor(base_target_sz[1] * search_area_scale));
-//    }
-//    else if(params.search_area_shape == "square"){
-//        //% square area, ignores the target aspect ratio
-//        sz.push_back(sqrt((base_target_sz[0] * search_area_scale) * (base_target_sz[1] * search_area_scale)));
-//        sz.push_back(sqrt((base_target_sz[0] * search_area_scale) * (base_target_sz[1] * search_area_scale)));
-//    }
-//    else if(params.search_area_shape == "fix_padding"){
-//        //% const padding
-//        sz.push_back(base_target_sz[0] + sqrt((base_target_sz[0] * search_area_scale) * (base_target_sz[1] * search_area_scale) + (base_target_sz[0] - base_target_sz[1]) / 4) - (base_target_sz[0] + base_target_sz[1]) / 2);
-//        sz.push_back(base_target_sz[1] + sqrt((base_target_sz[0] * search_area_scale) * (base_target_sz[1] * search_area_scale) + (base_target_sz[0] - base_target_sz[1]) / 4) - (base_target_sz[0] + base_target_sz[1]) / 2);
-//    }
-//    else{
-//        QMessageBox::warning(NULL, "Failed","Unknown 'params.search_area_shape'. Must be ''proportional'', ''square'' or ''fix_padding''");
-//    }
-
-
-
-//    //% set the size to exactly match the cell size
-//    sz[0] = round(sz[0] / featureRatio) * featureRatio;
-//    sz[1] = round(sz[1] / featureRatio) * featureRatio;
-//    use_sz[0] = floor(sz[0] / featureRatio);
-//    use_sz[1] = floor(sz[1] / featureRatio);
-
-
-
-//    //% construct the label function- correlation output, 2D gaussian function, with a peak located upon the target
-//    double output_sigma;
-//    output_sigma = sqrt(floor(base_target_sz[0]/featureRatio) * floor(base_target_sz[1]/featureRatio)) * output_sigma_factor;
-//    dim_rg = ceil((use_sz[0]-1)/2.0) - (-floor((use_sz[0]-1)/2.0)) + 1;
-//    vector <int> rg(dim_rg , 0),temp_rg;
-//    for(int i = -floor((use_sz[0]-1)/2.0) ; i <= ceil((use_sz[0]-1)/2.0) ; ++i){
-//        temp_rg.push_back(i);
-//    }
-//    circshift(rg , temp_rg , 1 , dim_rg , 0 , -floor((use_sz[0]-1)/2.0));
-
-//    dim_cg = ceil((use_sz[1]-1)/2.0) - (-floor((use_sz[1]-1)/2.0)) + 1;
-//    vector <int> cg(dim_cg , 0),temp_cg;
-//    for(int i = -floor((use_sz[1]-1)/2.0) ; i <= ceil((use_sz[1]-1)/2.0) ; ++i){
-//        temp_cg.push_back(i);
-//    }
-//    circshift(cg , temp_cg , 1 , dim_cg , 0 , -floor((use_sz[1]-1)/2.0));
-
-//    rs.create(dim_rg,dim_cg,CV_64F);
-//    cs.create(dim_rg,dim_cg,CV_64F);
-//    for (int i = 0; i < dim_rg; i++) {
-//        for (int k = 0; k < dim_cg; k++) {
-//            rs.at<double>(i,k) = (double)rg[i];
-//        }
-//    }
-//    for (int i = 0; i < dim_rg; i++) {
-//        for (int k = 0; k < dim_cg; k++) {
-//            cs.at<double>(i,k) = (double)cg[k];
-//        }
-//    }
-
-//    Mat y(dim_rg,dim_cg,CV_64F);
-//    y = rs.mul(rs) + cs.mul(cs);
-//    divide(y,pow(output_sigma,2),y);
-//    y = y.mul(-0.5);
-//    exp(y,y);
-
-//    yf = Mat::zeros(dim_rg, dim_cg, CV_32FC2);
-//    fft2(y,yf);
-
-
-
-//    if(interpolate_response == 1){
-//        interp_sz[0] = use_sz[0] * featureRatio;
-//        interp_sz[1] = use_sz[1] * featureRatio;
-//    }
-//    else{
-//        interp_sz[0] = use_sz[0];
-//        interp_sz[1] = use_sz[1];
-//    }
-
-
-
-//    //% construct cosine window
-//    cos_window.create(use_sz[0],use_sz[1],CV_32F);
-//    vector <float> hann_val(use_sz[0]);
-//    vector <float> hann_valT(use_sz[1]);
-//    hanning(use_sz[0],hann_val);
-//    hanning(use_sz[1],hann_valT);
-//    for(int i = 0 ; i < use_sz[0] ; ++i){
-//        for(int j = 0 ; j < use_sz[1] ; ++j){
-//            cos_window.at<float>(i,j) = hann_val[i] * hann_valT[j];
-//        }
-//    }
-
-
-
-
-//    //% Calculate feature dimension
-//    /*try{
-//        read_im = imread(video_path + "/test2_853x480/" + s_frames[0],CV_LOAD_IMAGE_UNCHANGED);
-//        //read_im = BGR2RGB(read_im);
-//        //video >> read_im;
-//        read_im.copyTo(im);
-//        resize(im,im,Size(width,height));
-//    }
-//    catch(exception& e){
-//        try{
-//            read_im = imread(s_frames[0]);
-//            read_im = BGR2RGB(read_im);
-//            read_im.copyTo(im);
-//            resize(im,im,Size(width,height));
-//        }
-//        catch(exception& e){
-//            //%disp([video_path '/' s_frames{1}])
-//            read_im = imread(video_path + "/" + s_frames[0]);
-//            read_im = BGR2RGB(read_im);
-//            read_im.copyTo(im);
-//            resize(im,im,Size(width,height));
-//        }
-//    }*/
-
-////for(int i = 0 ; i < im.rows ; ++i){
-////    for(int j = 0 ; j < im.cols ; ++j){
-////        cout<<(int)im.at<Vec3b>(i,j)[0]<<" ";
-////    }
-////    cout<<endl;
-////}
-
-
-//    //% compute feature dimensionality
-//    //-length(features) = 1-//
-//    for(int i = 0 ; i < 1 ; ++i){
-//        if(!(features.fparams.second.useForColor.first == "useForColor")){
-//            features.fparams.second.useForColor.first = "useForColor";
-//            features.fparams.second.useForColor.second = true;
-//        }
-//        if(!(features.fparams.second.useForColor.first == "useForGray")){
-//            features.fparams.second.useForGray.first = "useForGray";
-//            features.fparams.second.useForGray.second = true;
-//        }
-//        if((features.fparams.second.useForColor.second && colorImage) || (features.fparams.second.useForGray.second && !colorImage)){
-//            feature_dim = feature_dim + features.fparams.second.nDim.second;
-//        }
-//    }
-
-
-
-
-
-//    vector <int> scale_exp;
-//    if(nScales > 0){
-//        for(int i = -floor((nScales-1)/2) ; i <= ceil((nScales-1)/2) ; ++i){
-//            scale_exp.push_back(i);
-//        }
-//        for(int i = 0 ; i < scale_exp.size() ; ++i){
-//            scaleFactors.push_back(pow(scale_step,scale_exp[i]));
-//        }
-//        min_scale_factor = pow(scale_step,ceil(log(max(5 / sz[0] , 5 / sz[1])) / log(scale_step)));
-//        max_scale_factor = pow(scale_step,floor(log(min(width / base_target_sz[0] , height / base_target_sz[1])) / log(scale_step)));
-//    }
-
-
-
-
-//    int dim_ky = ceil((use_sz[0]-1)/2.0) - (-floor((use_sz[0]-1)/2.0)) + 1;
-//    int dim_kx = ceil((use_sz[1]-1)/2.0) - (-floor((use_sz[1]-1)/2.0)) + 1;
-//    vector <int> vec_ky(dim_ky , 0);
-//    ky = Mat::zeros(1,vec_ky.size(),CV_32FC2);
-//    vector <int> vec_kx(dim_kx , 0);
-//    kx = Mat::zeros(vec_kx.size(),1,CV_32FC2);
-//    if(interpolate_response >= 3){
-//        //% Pre-computes the grid that is used for score optimization
-//        vector <int> temp_ky;
-//        for(int i = -floor((use_sz[0]-1)/2) ; i <= ceil((use_sz[0]-1)/2) ; ++i){
-//            temp_ky.push_back(i);
-//        }
-//        circshift(vec_ky , temp_ky , 1 , dim_ky , 1 , -floor((use_sz[0]-1)/2));
-//        for(int i = 0 ; i < vec_ky.size() ; ++i){
-//            ky.at<Vec2f>(0,i)[0] = vec_ky.at(i);
-//        }
-
-//        vector <int> temp_kx;
-//        for(int i = -floor((use_sz[1]-1)/2) ; i <= ceil((use_sz[1]-1)/2) ; ++i){
-//            temp_kx.push_back(i);
-//        }
-//        circshift(vec_kx , temp_kx , 1 , dim_kx , 1 , -floor((use_sz[1]-1)/2));
-//        for(int i = 0 ; i < vec_kx.size() ; ++i){
-//            kx.at<Vec2f>(i,0)[0] = vec_kx.at(i);
-//        }
-
-//        newton_iterations = params.newton_iterations;
-//    }
-
-    cap.open("C:/Users/Eilin/Desktop/testVideo/test2_640x480.mp4");
-    if (!cap.isOpened()) {
-        cout << "video open fail!" << endl;
-        system("pause");
+            featureRatio = params.t_global.cell_size.second;
+            search_area = (init_target_sz[0] / featureRatio * search_area_scale) * (init_target_sz[1] / featureRatio * search_area_scale);
+        }
     }
 
-    timer = new QTimer(this); //constructor
-    QObject::connect(timer,SIGNAL(timeout()),this,SLOT(VideoCaptureSlot()));
-    timer->start(1000);
-    //showTime();
-    //connect(timer,SIGNAL(timeout()),this,SLOT(showTime()));
-    //timer->start(1000);
-//    QTime time = QTime::currentTime();
-//    QString text=time.toString("hh:mm:ss"); //設定顯示時間格式
-//    qDebug()<<text;
-    frameLock =false;
-    //VideoCaptureSlot();
+
+    global_feat_params = params.t_global;
+
+
+
+    currentScaleFactor;
+    if(search_area > filter_max_area){
+        currentScaleFactor = sqrt(search_area / filter_max_area);
+    }
+    else{
+        currentScaleFactor = 1.0;
+    }
+
+
+    //% target size at the initial scale
+    base_target_sz[2];
+    base_target_sz[0] = target_sz[0] / currentScaleFactor;
+    base_target_sz[1] = target_sz[1] / currentScaleFactor;
+
+
+    //% window size, taking padding into account
+    if(params.search_area_shape == "proportional") {
+        //% proportional area, same aspect ratio as the target
+        sz.push_back(floor(base_target_sz[0] * search_area_scale));
+        sz.push_back(floor(base_target_sz[1] * search_area_scale));
+    }
+    else if(params.search_area_shape == "square"){
+        //% square area, ignores the target aspect ratio
+        sz.push_back(sqrt((base_target_sz[0] * search_area_scale) * (base_target_sz[1] * search_area_scale)));
+        sz.push_back(sqrt((base_target_sz[0] * search_area_scale) * (base_target_sz[1] * search_area_scale)));
+    }
+    else if(params.search_area_shape == "fix_padding"){
+        //% const padding
+        sz.push_back(base_target_sz[0] + sqrt((base_target_sz[0] * search_area_scale) * (base_target_sz[1] * search_area_scale) + (base_target_sz[0] - base_target_sz[1]) / 4) - (base_target_sz[0] + base_target_sz[1]) / 2);
+        sz.push_back(base_target_sz[1] + sqrt((base_target_sz[0] * search_area_scale) * (base_target_sz[1] * search_area_scale) + (base_target_sz[0] - base_target_sz[1]) / 4) - (base_target_sz[0] + base_target_sz[1]) / 2);
+    }
+    else{
+        QMessageBox::warning(NULL, "Failed","Unknown 'params.search_area_shape'. Must be ''proportional'', ''square'' or ''fix_padding''");
+    }
+
+
+
+    //% set the size to exactly match the cell size
+    sz[0] = round(sz[0] / featureRatio) * featureRatio;
+    sz[1] = round(sz[1] / featureRatio) * featureRatio;
+    use_sz[0] = floor(sz[0] / featureRatio);
+    use_sz[1] = floor(sz[1] / featureRatio);
+
+
+
+    //% construct the label function- correlation output, 2D gaussian function, with a peak located upon the target
+    double output_sigma;
+    output_sigma = sqrt(floor(base_target_sz[0]/featureRatio) * floor(base_target_sz[1]/featureRatio)) * output_sigma_factor;
+    dim_rg = ceil((use_sz[0]-1)/2.0) - (-floor((use_sz[0]-1)/2.0)) + 1;
+    vector <int> rg(dim_rg , 0),temp_rg;
+    for(int i = -floor((use_sz[0]-1)/2.0) ; i <= ceil((use_sz[0]-1)/2.0) ; ++i){
+        temp_rg.push_back(i);
+    }
+    circshift(rg , temp_rg , 1 , dim_rg , 0 , -floor((use_sz[0]-1)/2.0));
+
+    dim_cg = ceil((use_sz[1]-1)/2.0) - (-floor((use_sz[1]-1)/2.0)) + 1;
+    vector <int> cg(dim_cg , 0),temp_cg;
+    for(int i = -floor((use_sz[1]-1)/2.0) ; i <= ceil((use_sz[1]-1)/2.0) ; ++i){
+        temp_cg.push_back(i);
+    }
+    circshift(cg , temp_cg , 1 , dim_cg , 0 , -floor((use_sz[1]-1)/2.0));
+
+    rs.create(dim_rg,dim_cg,CV_64F);
+    cs.create(dim_rg,dim_cg,CV_64F);
+    for (int i = 0; i < dim_rg; i++) {
+        for (int k = 0; k < dim_cg; k++) {
+            rs.at<double>(i,k) = (double)rg[i];
+        }
+    }
+    for (int i = 0; i < dim_rg; i++) {
+        for (int k = 0; k < dim_cg; k++) {
+            cs.at<double>(i,k) = (double)cg[k];
+        }
+    }
+
+    Mat y(dim_rg,dim_cg,CV_64F);
+    y = rs.mul(rs) + cs.mul(cs);
+    divide(y,pow(output_sigma,2),y);
+    y = y.mul(-0.5);
+    exp(y,y);
+
+    yf = Mat::zeros(dim_rg, dim_cg, CV_32FC2);
+    fft2(y,yf);
+
+
+
+    if(interpolate_response == 1){
+        interp_sz[0] = use_sz[0] * featureRatio;
+        interp_sz[1] = use_sz[1] * featureRatio;
+    }
+    else{
+        interp_sz[0] = use_sz[0];
+        interp_sz[1] = use_sz[1];
+    }
+
+
+
+    //% construct cosine window
+    cos_window.create(use_sz[0],use_sz[1],CV_32F);
+    vector <float> hann_val(use_sz[0]);
+    vector <float> hann_valT(use_sz[1]);
+    hanning(use_sz[0],hann_val);
+    hanning(use_sz[1],hann_valT);
+    for(int i = 0 ; i < use_sz[0] ; ++i){
+        for(int j = 0 ; j < use_sz[1] ; ++j){
+            cos_window.at<float>(i,j) = hann_val[i] * hann_valT[j];
+        }
+    }
+
+
+
+
+    //% Calculate feature dimension
+    /*try{
+        read_im = imread(video_path + "/test2_853x480/" + s_frames[0],CV_LOAD_IMAGE_UNCHANGED);
+        //read_im = BGR2RGB(read_im);
+        //video >> read_im;
+        read_im.copyTo(im);
+        resize(im,im,Size(width,height));
+    }
+    catch(exception& e){
+        try{
+            read_im = imread(s_frames[0]);
+            read_im = BGR2RGB(read_im);
+            read_im.copyTo(im);
+            resize(im,im,Size(width,height));
+        }
+        catch(exception& e){
+            //%disp([video_path '/' s_frames{1}])
+            read_im = imread(video_path + "/" + s_frames[0]);
+            read_im = BGR2RGB(read_im);
+            read_im.copyTo(im);
+            resize(im,im,Size(width,height));
+        }
+    }*/
+
+//for(int i = 0 ; i < im.rows ; ++i){
+//    for(int j = 0 ; j < im.cols ; ++j){
+//        cout<<(int)im.at<Vec3b>(i,j)[0]<<" ";
+//    }
+//    cout<<endl;
+//}
+
+
+    //% compute feature dimensionality
+    //-length(features) = 1-//
+    for(int i = 0 ; i < 1 ; ++i){
+        if(!(features.fparams.second.useForColor.first == "useForColor")){
+            features.fparams.second.useForColor.first = "useForColor";
+            features.fparams.second.useForColor.second = true;
+        }
+        if(!(features.fparams.second.useForColor.first == "useForGray")){
+            features.fparams.second.useForGray.first = "useForGray";
+            features.fparams.second.useForGray.second = true;
+        }
+        if((features.fparams.second.useForColor.second && colorImage) || (features.fparams.second.useForGray.second && !colorImage)){
+            feature_dim = feature_dim + features.fparams.second.nDim.second;
+        }
+    }
+
+
+
+
+
+    vector <int> scale_exp;
+    if(nScales > 0){
+        for(int i = -floor((nScales-1)/2) ; i <= ceil((nScales-1)/2) ; ++i){
+            scale_exp.push_back(i);
+        }
+        for(int i = 0 ; i < scale_exp.size() ; ++i){
+            scaleFactors.push_back(pow(scale_step,scale_exp[i]));
+        }
+        min_scale_factor = pow(scale_step,ceil(log(max(5 / sz[0] , 5 / sz[1])) / log(scale_step)));
+        max_scale_factor = pow(scale_step,floor(log(min(width / base_target_sz[0] , height / base_target_sz[1])) / log(scale_step)));
+    }
+
+
+
+
+    int dim_ky = ceil((use_sz[0]-1)/2.0) - (-floor((use_sz[0]-1)/2.0)) + 1;
+    int dim_kx = ceil((use_sz[1]-1)/2.0) - (-floor((use_sz[1]-1)/2.0)) + 1;
+    vector <int> vec_ky(dim_ky , 0);
+    ky = Mat::zeros(1,vec_ky.size(),CV_32FC2);
+    vector <int> vec_kx(dim_kx , 0);
+    kx = Mat::zeros(vec_kx.size(),1,CV_32FC2);
+    if(interpolate_response >= 3){
+        //% Pre-computes the grid that is used for score optimization
+        vector <int> temp_ky;
+        for(int i = -floor((use_sz[0]-1)/2) ; i <= ceil((use_sz[0]-1)/2) ; ++i){
+            temp_ky.push_back(i);
+        }
+        circshift(vec_ky , temp_ky , 1 , dim_ky , 1 , -floor((use_sz[0]-1)/2));
+        for(int i = 0 ; i < vec_ky.size() ; ++i){
+            ky.at<Vec2f>(0,i)[0] = vec_ky.at(i);
+        }
+
+        vector <int> temp_kx;
+        for(int i = -floor((use_sz[1]-1)/2) ; i <= ceil((use_sz[1]-1)/2) ; ++i){
+            temp_kx.push_back(i);
+        }
+        circshift(vec_kx , temp_kx , 1 , dim_kx , 1 , -floor((use_sz[1]-1)/2));
+        for(int i = 0 ; i < vec_kx.size() ; ++i){
+            kx.at<Vec2f>(i,0)[0] = vec_kx.at(i);
+        }
+
+        newton_iterations = params.newton_iterations;
+    }
+
+
 }
 
-void thread_BACF_tracking::showTime()
+/*void thread_BACF_tracking::showTime()
 { qDebug() << "ccvcvcvcvcv";
     qDebug() << "text";
 }
@@ -324,7 +308,7 @@ cout<<"videoslot "<<endl;
     }
 
 
-}
+}*/
 
 void thread_BACF_tracking::run(){
     //-- time = 0;
@@ -341,19 +325,29 @@ void thread_BACF_tracking::run(){
     //可delete
     //double loop_frame = 1;
 
-cout<<"isRun1 = "<<isRun<<endl;
+//cout<<"isRun1 = "<<isRun<<endl;
     while(isRun){
         //%load image
-        if(read_im.empty() || read_im.cols *read_im.rows == 0){
-            cout << "read_im.empty()" << endl;
+        if(Input_im->size() == 0 && !*isEnd){
+            cout << "Input_im is empty" << endl;
             waitKey(1000/FPS);
             continue;
         }
+        //else if(Input_im->size() == 0 && *isEnd){
+        else if(frame_num == Input_im->size()){
+            break;
+        }
 
-        if(!frameLock){
-            frameLock = true;
-            read_im.copyTo(threadFrame);
-            frameLock = false;
+        if(!*FrameLock){
+            *FrameLock = true;
+            cout<<"tracking_input_size = "<<Input_im->size()<<endl;
+            Input_im->front().copyTo(read_im);
+            Input_im->front().copyTo(threadFrame);
+
+            //resize(threadFrame,threadFrame,Size(width,height));
+            Input_im->pop();
+            //Input_im->erase(Input_im->begin());
+            *FrameLock = false;
         }else{
             continue;
         }
@@ -739,7 +733,7 @@ cout<<"isRun1 = "<<isRun<<endl;
             vector <Mat> t;
             Mat zero = Mat::zeros(use_sz[0],use_sz[1],CV_32FC2);
             Rect roi(sy[0],sx[0],sy.size(),sx.size());
-            cout<<roi<<endl;
+            //cout<<roi<<endl;
             for(int n = 0 ; n < h.size() ; ++n){
                 //-- t = single(zeros(use_sz(1), use_sz(2), size(h,3)));
                 t.push_back(zero.clone());
@@ -787,6 +781,7 @@ cout<<"isRun1 = "<<isRun<<endl;
         double end_time = clock();
         time = 1 / ((end_time - start_time) / CLOCKS_PER_SEC);
         cout<<"fps = "<<time<<endl;
+
 //        cout<<"-----------------------------------"<<endl;
 //        cout  << "executing time : " << (end_time - start_time) / CLOCKS_PER_SEC << "s" << endl;
 //        cout<<"-----------------------------------"<<endl;
@@ -803,7 +798,7 @@ cout<<"isRun1 = "<<isRun<<endl;
 
 //                im_to_show = double(im)/255;
             Mat im_to_show;
-            threadFrame.convertTo(im_to_show,CV_64FC3);
+            read_im.convertTo(im_to_show,CV_64FC3);
             im_to_show = im_to_show / 255;
 
             if(im_to_show.channels() == 1){
@@ -826,16 +821,16 @@ cout<<"isRun1 = "<<isRun<<endl;
                 //putText(im_to_show,"FPS: " + to_string(time) ,      Point(20,40),  FONT_HERSHEY_COMPLEX ,       0.5,Scalar(0,255,0));
                 rectangle(im_to_show,Point(rect_position_vis[0] * (img_h / height),rect_position_vis[1] * (img_w / width)),Point((rect_position_vis[0]+rect_position_vis[2]) * (img_h / height),(rect_position_vis[1]+rect_position_vis[3]) * (img_w / width)),Scalar(0,255,0),2);
                 //rectangle(im_to_show,Point(rect_position_vis[0],rect_position_vis[1]),Point((rect_position_vis[0]+rect_position_vis[2]),(rect_position_vis[1]+rect_position_vis[3])),Scalar(0,255,0),2);
-                resize(im_to_show,im_to_show,Size(show_w,show_h));
+                //resize(im_to_show,im_to_show,Size(show_w,show_h));
                 imshow("Tracking",im_to_show);
-                waitKey(0);
+                waitKey(1);
 
             }
             else{
                 //putText(im_to_show,"FPS: " + to_string(time) ,      Point(20,40),  FONT_HERSHEY_COMPLEX ,       0.5,Scalar(0,255,0));
                 rectangle(im_to_show,Point(rect_position_vis[0] * (img_h / height),rect_position_vis[1] * (img_w / width)),Point((rect_position_vis[0]+rect_position_vis[2]) * (img_h / height),(rect_position_vis[1]+rect_position_vis[3]) * (img_w / width)),Scalar(0,255,0),2);
                 //rectangle(im_to_show,Point(rect_position_vis[0],rect_position_vis[1]),Point((rect_position_vis[0]+rect_position_vis[2]),(rect_position_vis[1]+rect_position_vis[3])),Scalar(0,255,0),2);
-                resize(im_to_show,im_to_show,Size(show_w,show_h));
+                //resize(im_to_show,im_to_show,Size(show_w,show_h));
                 imshow("Tracking",im_to_show);
                 waitKey(1);
 
@@ -848,185 +843,184 @@ cout<<"isRun1 = "<<isRun<<endl;
 
     }
 
-    cap.release();
 }
 
 
-Mat thread_BACF_tracking::BGR2RGB(Mat &im){
-    vector <Mat> src;
+//Mat thread_BACF_tracking::BGR2RGB(Mat &im){
+//    vector <Mat> src;
 
-    split(im,src);
+//    split(im,src);
 
-    vector <Mat> result(3);
-    result.at(0) = src.at(2);
-    result.at(1) = src.at(1);
-    result.at(2) = src.at(0);
+//    vector <Mat> result(3);
+//    result.at(0) = src.at(2);
+//    result.at(1) = src.at(1);
+//    result.at(2) = src.at(0);
 
-    Mat img;
-    merge(result,img);
+//    Mat img;
+//    merge(result,img);
 
-    return img;
-}
+//    return img;
+//}
 
-Mat thread_BACF_tracking::RGB2BGR(Mat &im){
-    vector <Mat> src;
+//Mat thread_BACF_tracking::RGB2BGR(Mat &im){
+//    vector <Mat> src;
 
-    split(im,src);
+//    split(im,src);
 
-    vector <Mat> result(3);
-    result.at(0) = src.at(2);
-    result.at(1) = src.at(1);
-    result.at(2) = src.at(0);
+//    vector <Mat> result(3);
+//    result.at(0) = src.at(2);
+//    result.at(1) = src.at(1);
+//    result.at(2) = src.at(0);
 
-    Mat img;
-    merge(result,img);
+//    Mat img;
+//    merge(result,img);
 
-    return img;
-}
-
-
-Mat thread_BACF_tracking::QT_M_mul_M(Mat &M_Src1,Mat &M_Src2){
-
-    //M_Src2是否只有一個元素
-    bool one_element = false;
-    if(M_Src2.rows == 1 && M_Src2.cols == 1){
-        one_element = true;
-    }
+//    return img;
+//}
 
 
-    vector <Mat> src1;
-    vector <Mat> src2;
-    vector <Mat> mul_result(2);
+//Mat thread_BACF_tracking::QT_M_mul_M(Mat &M_Src1,Mat &M_Src2){
 
-    split(M_Src1,src1);
-    split(M_Src2,src2);
-
-
-    if(one_element){
-
-        //M_Src2 && M_Src1 -> 2 channels
-        if(M_Src2.type() >= 8 && M_Src1.type() >= 8){
-            mul_result.at(0) = (src1.at(0).mul(src2.at(0).at<float>(0,0))) - (src1.at(1).mul(src2.at(1).at<float>(0,0)));
-            mul_result.at(1) = (src1.at(0).mul(src2.at(1).at<float>(0,0))) + (src1.at(1).mul(src2.at(0).at<float>(0,0)));
-        }
-        //M_Src2 -> 1 channel , M_Src1 -> 2 channels
-        else if(M_Src2.type() < 8 && M_Src1.type() >= 8){
-            mul_result.at(0) = src1.at(0).mul(src2.at(0).at<float>(0,0));
-            mul_result.at(1) = src1.at(1).mul(src2.at(0).at<float>(0,0));
-        }
-        //M_Src2 -> 2 channels , M_Src1 -> 1 channel
-        else if(M_Src2.type() >= 8 && M_Src1.type() < 8){
-            mul_result.at(0) = src1.at(0).mul(src2.at(0).at<float>(0,0));
-            mul_result.at(1) = src1.at(0).mul(src2.at(1).at<float>(0,0));
-        }
-        //M_Src2 && M_Src1 -> 1 channels
-        else{
-            mul_result.at(0) = src1.at(0).mul(src2.at(0).at<float>(0,0));
-            mul_result.at(1) = src1.at(0).mul(0);
-        }
+//    //M_Src2是否只有一個元素
+//    bool one_element = false;
+//    if(M_Src2.rows == 1 && M_Src2.cols == 1){
+//        one_element = true;
+//    }
 
 
-    }
-    else{
+//    vector <Mat> src1;
+//    vector <Mat> src2;
+//    vector <Mat> mul_result(2);
 
-        //M_Src2 && M_Src1 -> 2 channels
-        if(M_Src2.type() >= 8 && M_Src1.type() >= 8){
-            mul_result.at(0) = (src1.at(0).mul(src2.at(0))) - (src1.at(1).mul(src2.at(1)));
-            mul_result.at(1) = (src1.at(0).mul(src2.at(1))) + (src1.at(1).mul(src2.at(0)));
-        }
-        //M_Src2 -> 1 channel , M_Src1 -> 2 channels
-        else if(M_Src2.type() < 8 && M_Src1.type() >= 8){
-            mul_result.at(0) = src1.at(0).mul(src2.at(0));
-            mul_result.at(1) = src1.at(1).mul(src2.at(0));
-        }
-        //M_Src2 -> 2 channels , M_Src1 -> 1 channel
-        else if(M_Src2.type() >= 8 && M_Src1.type() < 8){
-            mul_result.at(0) = src1.at(0).mul(src2.at(0));
-            mul_result.at(1) = src1.at(0).mul(src2.at(1));
-        }
-        //M_Src2 && M_Src1 -> 1 channels
-        else{
-            mul_result.at(0) = src1.at(0).mul(src2.at(0));
-            mul_result.at(1) = src1.at(0).mul(0);
-        }
+//    split(M_Src1,src1);
+//    split(M_Src2,src2);
 
 
-    }
+//    if(one_element){
+
+//        //M_Src2 && M_Src1 -> 2 channels
+//        if(M_Src2.type() >= 8 && M_Src1.type() >= 8){
+//            mul_result.at(0) = (src1.at(0).mul(src2.at(0).at<float>(0,0))) - (src1.at(1).mul(src2.at(1).at<float>(0,0)));
+//            mul_result.at(1) = (src1.at(0).mul(src2.at(1).at<float>(0,0))) + (src1.at(1).mul(src2.at(0).at<float>(0,0)));
+//        }
+//        //M_Src2 -> 1 channel , M_Src1 -> 2 channels
+//        else if(M_Src2.type() < 8 && M_Src1.type() >= 8){
+//            mul_result.at(0) = src1.at(0).mul(src2.at(0).at<float>(0,0));
+//            mul_result.at(1) = src1.at(1).mul(src2.at(0).at<float>(0,0));
+//        }
+//        //M_Src2 -> 2 channels , M_Src1 -> 1 channel
+//        else if(M_Src2.type() >= 8 && M_Src1.type() < 8){
+//            mul_result.at(0) = src1.at(0).mul(src2.at(0).at<float>(0,0));
+//            mul_result.at(1) = src1.at(0).mul(src2.at(1).at<float>(0,0));
+//        }
+//        //M_Src2 && M_Src1 -> 1 channels
+//        else{
+//            mul_result.at(0) = src1.at(0).mul(src2.at(0).at<float>(0,0));
+//            mul_result.at(1) = src1.at(0).mul(0);
+//        }
 
 
-    Mat result;
-    merge(mul_result,result);
+//    }
+//    else{
 
-    return result;
-}
-
-
-vector <Mat> thread_BACF_tracking::QT_vec_mul_vec(vector <Mat> &Vec_Src1 , vector <Mat> &Vec_Src2){
-    int Num_dim = Vec_Src1.size();
-
-    vector <Mat> mul_ans;
-
-    for(int n = 0 ; n < Num_dim ; ++n){
-        vector <Mat> src1;
-        vector <Mat> src2;
-        vector <Mat> mul_result(2);
-
-        split(Vec_Src1.at(n),src1);
-        split(Vec_Src2.at(n),src2);
-
-
-        mul_result.at(0) = (src1.at(0).mul(src2.at(0))) - (src1.at(1).mul(src2.at(1)));
-        mul_result.at(1) = (src1.at(0).mul(src2.at(1))) + (src1.at(1).mul(src2.at(0)));
-
-
-        Mat result;
-        merge(mul_result,result);
-
-        mul_ans.push_back(result.clone());
-    }
-
-    return mul_ans;
-}
-
-Mat thread_BACF_tracking::QT_conj_m(Mat &src){
-    vector <Mat> src_temp;
-
-    split(src,src_temp);
-
-    vector <Mat> conj_result(2);
+//        //M_Src2 && M_Src1 -> 2 channels
+//        if(M_Src2.type() >= 8 && M_Src1.type() >= 8){
+//            mul_result.at(0) = (src1.at(0).mul(src2.at(0))) - (src1.at(1).mul(src2.at(1)));
+//            mul_result.at(1) = (src1.at(0).mul(src2.at(1))) + (src1.at(1).mul(src2.at(0)));
+//        }
+//        //M_Src2 -> 1 channel , M_Src1 -> 2 channels
+//        else if(M_Src2.type() < 8 && M_Src1.type() >= 8){
+//            mul_result.at(0) = src1.at(0).mul(src2.at(0));
+//            mul_result.at(1) = src1.at(1).mul(src2.at(0));
+//        }
+//        //M_Src2 -> 2 channels , M_Src1 -> 1 channel
+//        else if(M_Src2.type() >= 8 && M_Src1.type() < 8){
+//            mul_result.at(0) = src1.at(0).mul(src2.at(0));
+//            mul_result.at(1) = src1.at(0).mul(src2.at(1));
+//        }
+//        //M_Src2 && M_Src1 -> 1 channels
+//        else{
+//            mul_result.at(0) = src1.at(0).mul(src2.at(0));
+//            mul_result.at(1) = src1.at(0).mul(0);
+//        }
 
 
-    conj_result.at(0) = src_temp.at(0).clone();
-    conj_result.at(1) = src_temp.at(1).mul(-1);
-
-    Mat result;
-    merge(conj_result,result);
-
-    return result;
-}
-
-vector <Mat> thread_BACF_tracking::QT_conj(vector <Mat> &Vec_Src){
-    int Num_dim = Vec_Src.size();
-
-    vector <Mat> conj_ans;
-    for(int n = 0 ; n < Num_dim ; ++n){
-        vector <Mat> src;
-
-        split(Vec_Src.at(n),src);
-
-        vector <Mat> conj_result(2);
+//    }
 
 
-        conj_result.at(0) = src.at(0).clone();
-        conj_result.at(1) = src.at(1).mul(-1);
+//    Mat result;
+//    merge(mul_result,result);
 
-        Mat result;
-        merge(conj_result,result);
-        conj_ans.push_back(result.clone());
+//    return result;
+//}
 
-    }
-    return conj_ans;
-}
+
+//vector <Mat> thread_BACF_tracking::QT_vec_mul_vec(vector <Mat> &Vec_Src1 , vector <Mat> &Vec_Src2){
+//    int Num_dim = Vec_Src1.size();
+
+//    vector <Mat> mul_ans;
+
+//    for(int n = 0 ; n < Num_dim ; ++n){
+//        vector <Mat> src1;
+//        vector <Mat> src2;
+//        vector <Mat> mul_result(2);
+
+//        split(Vec_Src1.at(n),src1);
+//        split(Vec_Src2.at(n),src2);
+
+
+//        mul_result.at(0) = (src1.at(0).mul(src2.at(0))) - (src1.at(1).mul(src2.at(1)));
+//        mul_result.at(1) = (src1.at(0).mul(src2.at(1))) + (src1.at(1).mul(src2.at(0)));
+
+
+//        Mat result;
+//        merge(mul_result,result);
+
+//        mul_ans.push_back(result.clone());
+//    }
+
+//    return mul_ans;
+//}
+
+//Mat thread_BACF_tracking::QT_conj_m(Mat &src){
+//    vector <Mat> src_temp;
+
+//    split(src,src_temp);
+
+//    vector <Mat> conj_result(2);
+
+
+//    conj_result.at(0) = src_temp.at(0).clone();
+//    conj_result.at(1) = src_temp.at(1).mul(-1);
+
+//    Mat result;
+//    merge(conj_result,result);
+
+//    return result;
+//}
+
+//vector <Mat> thread_BACF_tracking::QT_conj(vector <Mat> &Vec_Src){
+//    int Num_dim = Vec_Src.size();
+
+//    vector <Mat> conj_ans;
+//    for(int n = 0 ; n < Num_dim ; ++n){
+//        vector <Mat> src;
+
+//        split(Vec_Src.at(n),src);
+
+//        vector <Mat> conj_result(2);
+
+
+//        conj_result.at(0) = src.at(0).clone();
+//        conj_result.at(1) = src.at(1).mul(-1);
+
+//        Mat result;
+//        merge(conj_result,result);
+//        conj_ans.push_back(result.clone());
+
+//    }
+//    return conj_ans;
+//}
 
 
 
@@ -1090,12 +1084,12 @@ void thread_BACF_tracking::hanning(int N, vector <float> &ans)
     }
 }
 
-void thread_BACF_tracking::CopyMatVector(vector <Mat> &old_vec , vector <Mat> &new_vec){
-    new_vec.clear();
-    for(int n = 0 ; n < old_vec.size() ; ++n){
-        new_vec.push_back(old_vec[n].clone());
-    }
-}
+//void thread_BACF_tracking::CopyMatVector(vector <Mat> &old_vec , vector <Mat> &new_vec){
+//    new_vec.clear();
+//    for(int n = 0 ; n < old_vec.size() ; ++n){
+//        new_vec.push_back(old_vec[n].clone());
+//    }
+//}
 
 
 void thread_BACF_tracking::fftshift(Mat &out)

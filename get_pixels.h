@@ -3,7 +3,8 @@
 
 #include <cmath>
 #include <opencv2/opencv.hpp>
-#include "bacf_optimized.h"
+//#include "bacf_optimized.h"
+#include "thread_bacf_tracking.h"
 
 using namespace cv;
 using namespace std;

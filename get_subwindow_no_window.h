@@ -1,7 +1,8 @@
 #ifndef GET_SUBWINDOW_NO_WINDOW_H
 #define GET_SUBWINDOW_NO_WINDOW_H
 
-#include "bacf_optimized.h"
+//#include "bacf_optimized.h"
+#include "thread_bacf_tracking.h"
 
 void get_subwindow_no_window(vector <Mat> &im,vector <int> &pos,vector <int> &sz,vector <int> &yys,vector <int> &xxs);
 

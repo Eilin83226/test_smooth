@@ -1,7 +1,8 @@
 #ifndef BACF_OPTIMIZED_H
 #define BACF_OPTIMIZED_H
 
-#include "run_bacf.h"
+#include "mainwindow.h"
+//#include "run_bacf.h"
 #include <cstdio>
 #include <opencv2/opencv.hpp>
 #include <QMessageBox>

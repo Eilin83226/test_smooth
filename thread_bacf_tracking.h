@@ -1,7 +1,8 @@
 #ifndef THREAD_BACF_TRACKING_H
 #define THREAD_BACF_TRACKING_H
 
-#include "run_bacf.h"
+//#include "run_bacf.h"
+#include "mainwindow.h"
 #include <cstdio>
 #include <opencv2/opencv.hpp>
 #include <QMessageBox>
@@ -25,7 +26,7 @@ class thread_BACF_tracking : public QThread{
     Q_OBJECT
 
 public:
-    thread_BACF_tracking(parameters &tparams);
+    thread_BACF_tracking(parameters &tparams ,queue <Mat> *tInput_im ,bool *tFrameLock ,bool *tIsEnd);
 
 
 protected:
@@ -33,15 +34,15 @@ protected:
 
 //signals:
 private slots:
-    void VideoCaptureSlot();
-    void showTime();
+    //void VideoCaptureSlot();
+    //void showTime();
 
 
 private:
     //調整追蹤大小
-    const double width = 240;
-    const double height = 135;
-    const double img_w = 853;
+    const double width = 640;
+    const double height = 480;
+    const double img_w = 640;
     const double img_h = 480;
     const double show_w = 640;
     const double show_h = 480;
@@ -88,27 +89,28 @@ private:
     int scale_ind;
     vector <Mat> g_f;
 
-
-    VideoCapture cap;
-    QTimer *timer;
+    queue <Mat> *Input_im;
+    //vector <Mat> *Input_im;
+    bool *FrameLock;
     bool isFirstFrame = true;
-    bool isRun = false;
-    bool frameLock;
+    bool isRun = true;
+    bool *isEnd;
+    int frame_num = 0;
 
 
     template<typename ty>
     void circshift(ty &out, const ty &in, int xdim, int ydim, int xshift, int yshift);
     void fft2(const Mat &src, Mat &Fourier);
     void hanning(int N, vector <float> &ans);
-    void CopyMatVector(vector <Mat> &old_vec , vector <Mat> &new_vec);
     void fftshift(Mat &out);
     void circshift(Mat &out, const Point &delta);
-    vector <Mat> QT_conj(vector <Mat> &Vec_Src);
-    Mat QT_conj_m(Mat &src);
-    vector <Mat> QT_vec_mul_vec(vector <Mat> &Vec_Src1 , vector <Mat> &Vec_Src2);
-    Mat QT_M_mul_M(Mat &M_Src1,Mat &M_Src2);
-    Mat BGR2RGB(Mat &im);
-    Mat RGB2BGR(Mat &im);
+//    vector <Mat> QT_conj(vector <Mat> &Vec_Src);
+//    Mat QT_conj_m(Mat &src);
+//    vector <Mat> QT_vec_mul_vec(vector <Mat> &Vec_Src1 , vector <Mat> &Vec_Src2);
+//    Mat QT_M_mul_M(Mat &M_Src1,Mat &M_Src2);
+//    void CopyMatVector(vector <Mat> &old_vec , vector <Mat> &new_vec);
+//    Mat BGR2RGB(Mat &im);
+//    Mat RGB2BGR(Mat &im);
 
 
 };

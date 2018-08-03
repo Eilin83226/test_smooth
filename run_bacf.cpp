@@ -1,4 +1,4 @@
-#include "run_bacf.h"
+//#include "run_bacf.h"
 #include <cmath>
 #include "bacf_optimized.h"
 #include "thread_bacf_tracking.h"
@@ -90,8 +90,8 @@ void run_BACF(image_info seq,string video_path,double lr,track_result &results){
     //trackinThread.start(QThread::TimeCriticalPriority);
 
 
-    Widget w;
-    w.start(QThread::TimeCriticalPriority);
+//    Widget w;
+//    w.start(QThread::TimeCriticalPriority);
 
 
 }
