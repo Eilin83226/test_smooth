@@ -1,4 +1,4 @@
-#ifndef MAINWINDOW_H
+﻿#ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
 #include <QMainWindow>
@@ -26,6 +26,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <queue>
+#include <Windows.h>
 
 #include "mclmcrrt.h"
 #include "mclcppclass.h"
@@ -146,13 +147,24 @@ private:
     VideoCapture cap;
     QTimer *mytimer;
     bool isFirstFrame = true;
+    //判斷影片是否結束
     bool isEnd = false;
     bool isRun = true;
     bool frameLock = false;
     Mat read_im;
     queue <Mat> Input_im;
     //vector <Mat> Input_im;
-    vector <Mat> total;
+    //vector <Mat> total;
+    //紀錄每秒執行了幾個frame
+    int perSec_frame = 0;
+    //第幾個frame
+    int Write_num_frame = 0;
+
+    char Tracking_Name[40];
+    VideoWriter TrackingWriter;
+
+    //存放影片的路徑
+    string root = "C:/Users/Eilin/Documents/MATLAB/BACF/BACF_toUpload/seq/test/";
 
     void load_video_info(string video_path,image_info *seq,vector <vector <double> > *ground_truth);
     int getdir(string dir, vector<string> &files);

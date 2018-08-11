@@ -1,4 +1,4 @@
-#include "thread_bacf_tracking.h"
+﻿#include "thread_bacf_tracking.h"
 #include "get_pixels.h"
 #include "get_features.h"
 #include "get_subwindow_no_window.h"
@@ -9,7 +9,7 @@
 
 #define FPS 15
 
-thread_BACF_tracking::thread_BACF_tracking(parameters &tparams ,queue <Mat> *tInput_im ,bool *tFrameLock ,bool *tIsEnd):params(tparams),Input_im(tInput_im),FrameLock(tFrameLock),isEnd(tIsEnd){
+thread_BACF_tracking::thread_BACF_tracking(parameters &tparams ,queue <Mat> *tInput_im ,bool *tFrameLock ,bool *tIsEnd ,int *tWrite_num_frame ,VideoWriter *tTrackingWriter):params(tparams),Input_im(tInput_im),FrameLock(tFrameLock),isEnd(tIsEnd),Write_num_frame(tWrite_num_frame),TrackingWriter(tTrackingWriter){
 
     //%   Setting parameters for local use.
     double search_area_scale = params.search_area_scale;
@@ -327,8 +327,43 @@ void thread_BACF_tracking::run(){
 
 //cout<<"isRun1 = "<<isRun<<endl;
     while(isRun){
+
+        if(*Write_num_frame == 0 && !*isEnd){
+            cout << "No Frames !" << endl;
+            waitKey(1000/FPS);
+            continue;
+        }
+        else if(*Write_num_frame == Read_num_frame && *isEnd){
+            cout << "Finished !" << endl;
+            //刪除資料夾，RemoveDirectoryA只適用在windows上，且只能刪除空的Directory
+            bool del_Dir = RemoveDirectoryA((root + file_name).c_str());
+            if(del_Dir == true){
+                cout << "Frame Directory is removed !" << endl;
+            }
+            else{
+                cout << "Frame Directory is failed to delete !" << endl;;
+            }
+            //TrackingWriter->~VideoWriter();
+            break;
+        }
+
         //%load image
-        if(Input_im->size() == 0 && !*isEnd){
+        if(Read_num_frame < *Write_num_frame && !*FrameLock){
+            *FrameLock = true;
+            Read_num_frame++;
+            read_im = imread(root + file_name + to_string(Read_num_frame) + ".jpg");
+            resize(read_im,threadFrame,Size(width,height));
+            //threadFrame = read_im.clone();
+            //-- 成功讀到Frame之後便刪除
+            int remove_status = remove((root + file_name + to_string(Read_num_frame) + ".jpg").c_str());
+
+            *FrameLock = false;
+        }
+        else{
+            continue;
+        }
+
+        /*if(Input_im->size() == 0 && !*isEnd){
             cout << "Input_im is empty" << endl;
             waitKey(1000/FPS);
             continue;
@@ -343,14 +378,13 @@ void thread_BACF_tracking::run(){
             cout<<"tracking_input_size = "<<Input_im->size()<<endl;
             Input_im->front().copyTo(read_im);
             Input_im->front().copyTo(threadFrame);
-
             //resize(threadFrame,threadFrame,Size(width,height));
             Input_im->pop();
             //Input_im->erase(Input_im->begin());
             *FrameLock = false;
         }else{
             continue;
-        }
+        }*/
 
         //紀錄起始時間
         //-- tic();
@@ -798,7 +832,7 @@ void thread_BACF_tracking::run(){
 
 //                im_to_show = double(im)/255;
             Mat im_to_show;
-            read_im.convertTo(im_to_show,CV_64FC3);
+            threadFrame.convertTo(im_to_show,CV_64FC3);
             im_to_show = im_to_show / 255;
 
             if(im_to_show.channels() == 1){
@@ -819,19 +853,22 @@ void thread_BACF_tracking::run(){
                 isFirstFrame = false;
 
                 //putText(im_to_show,"FPS: " + to_string(time) ,      Point(20,40),  FONT_HERSHEY_COMPLEX ,       0.5,Scalar(0,255,0));
-                rectangle(im_to_show,Point(rect_position_vis[0] * (img_h / height),rect_position_vis[1] * (img_w / width)),Point((rect_position_vis[0]+rect_position_vis[2]) * (img_h / height),(rect_position_vis[1]+rect_position_vis[3]) * (img_w / width)),Scalar(0,255,0),2);
+                rectangle(read_im,Point(rect_position_vis[0] * (img_w / width),rect_position_vis[1] * (img_h / height)),Point((rect_position_vis[0]+rect_position_vis[2]) * (img_w / width),(rect_position_vis[1]+rect_position_vis[3]) * (img_h / height)),Scalar(0,255,0),2);
                 //rectangle(im_to_show,Point(rect_position_vis[0],rect_position_vis[1]),Point((rect_position_vis[0]+rect_position_vis[2]),(rect_position_vis[1]+rect_position_vis[3])),Scalar(0,255,0),2);
                 //resize(im_to_show,im_to_show,Size(show_w,show_h));
-                imshow("Tracking",im_to_show);
+                //TrackingWriter->write(read_im);
+                //cout<<im_to_show.size()<<endl;
+                imshow("Tracking",read_im);
                 waitKey(1);
 
             }
             else{
                 //putText(im_to_show,"FPS: " + to_string(time) ,      Point(20,40),  FONT_HERSHEY_COMPLEX ,       0.5,Scalar(0,255,0));
-                rectangle(im_to_show,Point(rect_position_vis[0] * (img_h / height),rect_position_vis[1] * (img_w / width)),Point((rect_position_vis[0]+rect_position_vis[2]) * (img_h / height),(rect_position_vis[1]+rect_position_vis[3]) * (img_w / width)),Scalar(0,255,0),2);
+                rectangle(read_im,Point(rect_position_vis[0] * (img_w / width),rect_position_vis[1] * (img_h / height)),Point((rect_position_vis[0]+rect_position_vis[2]) * (img_w / width),(rect_position_vis[1]+rect_position_vis[3]) * (img_h / height)),Scalar(0,255,0),2);
                 //rectangle(im_to_show,Point(rect_position_vis[0],rect_position_vis[1]),Point((rect_position_vis[0]+rect_position_vis[2]),(rect_position_vis[1]+rect_position_vis[3])),Scalar(0,255,0),2);
                 //resize(im_to_show,im_to_show,Size(show_w,show_h));
-                imshow("Tracking",im_to_show);
+                //TrackingWriter->write(read_im);
+                imshow("Tracking",read_im);
                 waitKey(1);
 
             }

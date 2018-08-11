@@ -1,4 +1,4 @@
-#include "mainwindow.h"
+﻿#include "mainwindow.h"
 #include "ui_mainwindow.h"
 //#include "load_video_info.h"
 //#include "run_bacf.h"
@@ -220,6 +220,31 @@ void MainWindow::run_BACF(vector <double> init_rect,double lr,track_result &resu
     //trackinThread.start(QThread::TimeCriticalPriority);
 
 
+    /*VideoCapture capture(0);
+    Size videoSize = Size((int)capture.get(CV_CAP_PROP_FRAME_WIDTH),(int)capture.get(CV_CAP_PROP_FRAME_HEIGHT));
+    VideoWriter writer;
+    writer.open("VideoTest.avi", CV_FOURCC('M', 'J', 'P', 'G'), 30, videoSize);
+    namedWindow("show image",0);
+
+    int time = 0;
+    while(true){
+        Mat frame;
+        capture >> frame;
+        if(time < 500){
+            writer.write(frame);
+            imshow("show image", frame);
+            waitKey(1);
+            time++;
+        }
+        else{
+            writer.~VideoWriter();
+            break;
+        }
+    }*/
+
+
+
+
     //-----------------------------------------------------------------------
     cap.open("C:/Users/Eilin/Desktop/testVideo/test2_640x480.mp4");
     //cap.open(0);
@@ -229,15 +254,23 @@ void MainWindow::run_BACF(vector <double> init_rect,double lr,track_result &resu
     }
     cout << "video open success!" << endl;
 
+    string root_dir = root + "Serious";
+    //創一個新的資料夾存放圖片,windows專用方法
+    CreateDirectoryA(root_dir.c_str(),NULL);
+
+
+
     mytimer = new QTimer(this);
     //showTime();
-    mytimer->start(1);                   //以1000毫秒為周期起動定時器
+    mytimer->start(33);                   //以1000毫秒為周期起動定時器
 
-    cout<<"first"<<endl;
     connect(mytimer,SIGNAL(timeout()),this,SLOT(VideoCaptureSlot()));
 
-    thread_BACF_tracking *trackinThread = new thread_BACF_tracking(params ,&Input_im ,&frameLock ,&isEnd);
+
+    thread_BACF_tracking *trackinThread = new thread_BACF_tracking(params ,&Input_im ,&frameLock ,&isEnd ,&Write_num_frame ,&TrackingWriter);
     trackinThread->start(QThread::TimeCriticalPriority);
+
+
 
     //Widget *w = new Widget(&Input_im ,&frameLock ,&isRun);
     //w->start(QThread::TimeCriticalPriority);
@@ -248,28 +281,58 @@ void MainWindow::VideoCaptureSlot()
     //qDebug()<<"fuck";
     for(int i = 0 ; i < 50; ++i){
         if(!frameLock){
+
             frameLock = true;
-            cout << "videoCaptureSlot start" <<endl;
+
+            //cout << "videoCaptureSlot start" <<endl;
             cap >> read_im;
+            perSec_frame++;
+            Write_num_frame++;
+
+            //cout<<"Write_num_frame = "<<Write_num_frame<<endl;
+            if(perSec_frame >= 30){
+                waitKey(100);
+                perSec_frame = 0;
+            }
             if( read_im.empty()){
                 cout << "video End." <<endl;
+                Write_num_frame--;
                 isEnd = true;
                 frameLock = false;
 
                 //停止Qtimer
                 mytimer->stop();
 
+                //TrackingWriter.~VideoWriter();
                 cap.release();
                 return;
             }
-            //Input_im.push_back(read_im.clone());
-            Input_im.push(read_im.clone());
+            //TrackingWriter.write(read_im);
+            //Input_im.push(read_im.clone());
+            /*cout<<"Input_im = "<<endl;
+            for(int i = 0 ; i < read_im.rows ; i++){
+                for(int j = 0 ; j < read_im.cols ; j++){
+                    cout<<(int)read_im.at<Vec3b>(i,j)[0]<<" ";
+                }cout<<endl;
+            }*/
+            //cout<<root + "Serious/" +to_string(Write_num_frame)+".jpg"<<endl;
+            imwrite(root + "Serious/" +to_string(Write_num_frame)+".jpg",read_im.clone());
+            //Mat im = imread(root  + "Serious/" +to_string(Write_num_frame)+".bmp");
+            /*cout<<"read_im = "<<endl;
+            for(int i = 0 ; i < im.rows ; i++){
+                for(int j = 0 ; j < im.cols ; j++){
+                    cout<<(int)im.at<Vec3b>(i,j)[0]<<" ";
+                }cout<<endl;
+            }*/
+            //imshow("read_im",im);
+            //waitKey(0);
             //total.push_back(read_im);
-            cout<<"Input_size = "<<Input_im.size()<<endl;
+            //cout<<"Input_size = "<<Input_im.size()<<endl;
             //cout<<"total = "<<total.size()<<endl;
             cout << "videoCaptureSlot end" <<endl;
 
             frameLock = false;
+
 //            if( read_im.empty()){
 //                cout << "End." <<endl;
 //                isRun = false;

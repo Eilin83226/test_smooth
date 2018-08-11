@@ -166,3 +166,8 @@ win32: LIBS += -L$$PWD/./ -lQTexp
 INCLUDEPATH += $$PWD/.
 DEPENDPATH += $$PWD/.
 
+DISTFILES +=
+
+RESOURCES += \
+    background_img.qrc
+

@@ -1,4 +1,4 @@
-#ifndef THREAD_BACF_TRACKING_H
+﻿#ifndef THREAD_BACF_TRACKING_H
 #define THREAD_BACF_TRACKING_H
 
 //#include "run_bacf.h"
@@ -26,7 +26,7 @@ class thread_BACF_tracking : public QThread{
     Q_OBJECT
 
 public:
-    thread_BACF_tracking(parameters &tparams ,queue <Mat> *tInput_im ,bool *tFrameLock ,bool *tIsEnd);
+    thread_BACF_tracking(parameters &tparams ,queue <Mat> *tInput_im ,bool *tFrameLock ,bool *tIsEnd ,int *tWrite_num_frame ,VideoWriter *tTrackingWriter);
 
 
 protected:
@@ -40,8 +40,8 @@ private slots:
 
 private:
     //調整追蹤大小
-    const double width = 640;
-    const double height = 480;
+    const double width = 240;
+    const double height = 135;
     const double img_w = 640;
     const double img_h = 480;
     const double show_w = 640;
@@ -96,6 +96,14 @@ private:
     bool isRun = true;
     bool *isEnd;
     int frame_num = 0;
+    //讀到第幾個frame
+    int Read_num_frame = 0;
+    int *Write_num_frame;
+    VideoWriter *TrackingWriter;
+
+    //讀取圖片的路徑
+    string root = "C:/Users/Eilin/Documents/MATLAB/BACF/BACF_toUpload/seq/test/";
+    string file_name = "Serious/";
 
 
     template<typename ty>
