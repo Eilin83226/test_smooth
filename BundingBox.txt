@@ -1,0 +1,2 @@
+1. rect_position_vis = 169,199,72,112
+

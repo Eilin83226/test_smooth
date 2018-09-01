@@ -24,18 +24,42 @@
 #define resolution_width 3840
 #define resolution_height 2160
 
+void add_pixel(Pixel &pixel){
+    pixel.y = pixel.y + pixel.x;
+    pixel.x = pixel.x * 3;
+}
+
+
+
+struct Operator
+{
+  void operator ()(Pixel &pixel, const int * position) const
+  {
+     //Perform a simple threshold operation
+      //cout<<*position<<". pixel.x = "<<pixel.x<<endl;
+      cout<<"["<<position[0]<<","<<position[1]<<"] = "<<pixel.x<<" , "<<pixel.y<<endl;
+    //add_pixel(pixel);
+
+    //cout<<"pixel.x = "<<(float)pixel.x<<endl;
+    //cout<<"pixel.y = "<<(float)pixel.y<<endl;
+
+  }
+};
+
+
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
     //%   Load video information
-//    string base_path = "C:/Users/Eilin/Documents/MATLAB/BACF/BACF_toUpload/seq";
-//    string video = "test";
-//    string video_path = base_path +"/"+ video;
+    string base_path = "C:/Users/Eilin/Documents/MATLAB/BACF/BACF_toUpload/seq";
+    string video = "test";
+    string video_path = base_path +"/"+ video;
 
     //設定ground_truth
-    //load_video_info(video_path,&seq,&ground_truth);
+    load_video_info(video_path,&seq,&ground_truth);
 
     //-----start:初始化bounding box-----//
     ifstream fin;
@@ -67,8 +91,53 @@ MainWindow::MainWindow(QWidget *parent) :
     learning_rate = 0.005;
 
     //執行BACF追蹤演算法
-    run_BACF(init_rect,learning_rate,results);
+    run_BACF(seq,learning_rate,results);
 
+
+
+    /*Mat d(4,4,CV_32FC2,Scalar(2,2));
+    Mat c(4,4,CV_32FC2,Scalar(1,0));
+    c.at<Vec2f>(0,0)[0] = 1;
+    c.at<Vec2f>(0,1)[0] = 2;
+    c.at<Vec2f>(0,2)[0] = 3;
+    c.at<Vec2f>(0,3)[0] = 4;
+    c.at<Vec2f>(1,0)[0] = 5;
+    c.at<Vec2f>(1,1)[0] = 6;
+    c.at<Vec2f>(1,2)[0] = 7;
+    c.at<Vec2f>(1,3)[0] = 8;
+    c.at<Vec2f>(2,0)[0] = 9;
+    c.at<Vec2f>(2,1)[0] = 10;
+    c.at<Vec2f>(2,2)[0] = 11;
+    c.at<Vec2f>(2,3)[0] = 12;
+    c.at<Vec2f>(3,0)[0] = 13;
+    c.at<Vec2f>(3,1)[0] = 14;
+    c.at<Vec2f>(3,2)[0] = 15;
+    c.at<Vec2f>(3,3)[0] = 16;
+    cout<<"c = "<<endl;
+    cout<<c<<endl;
+    //c.forEach<Pixel>(Operator());
+    c.forEach<Pixel>
+            (
+              [&](Pixel &pixel, const int * position) -> void
+              {
+                d.at<Vec2f>(position[0],position[1])[0] = d.at<Vec2f>(position[0],position[1])[0] * pixel.x;
+                d.at<Vec2f>(position[0],position[1])[1] = d.at<Vec2f>(position[0],position[1])[1] * pixel.y;
+
+                //add_pixel(pixel);
+              }
+            );
+
+    cout<<"c = "<<endl;
+    cout<<c<<endl;
+    cout<<"d = "<<endl;
+    cout<<d<<endl;
+    Mat a(2,2,CV_32FC2,Scalar(2.2,1.1));
+    Mat b(2,2,CV_32FC2,Scalar(0.3,0.2));*/
+//    cout<<"a = "<<endl;
+//    cout<<a<<endl;
+//    a.forEach<Pixel>(Operator());
+//    cout<<"a1 = "<<endl;
+//    cout<<a<<endl;
 
 
 
@@ -117,7 +186,7 @@ void MainWindow::load_video_info(string video_path,image_info *seq,vector <vecto
 
     //--img_files = dir(fullfile(img_path, '*.jpg'));
     //--img_files = {img_files.name};
-    img_path = "C://Users//Eilin//Documents//MATLAB//BACF//BACF_toUpload//seq//test//test2_853x480//";
+    img_path = "C://Users//Eilin//Documents//MATLAB//BACF//BACF_toUpload//seq//test//480p_test5_front//";
     getdir(img_path, (*seq).s_frame);
 }
 
@@ -142,7 +211,7 @@ int MainWindow::getdir(string dir, vector<string> &files){
     //return 0;
 }
 
-void MainWindow::run_BACF(vector <double> init_rect,double lr,track_result &results){
+void MainWindow::run_BACF(image_info &seq,double lr,track_result &results){
 
     //設置參數
     //%   HOG feature parameters
@@ -196,15 +265,15 @@ void MainWindow::run_BACF(vector <double> init_rect,double lr,track_result &resu
 
     //%   size, position, frames initialization
     //--params.wsize    = [seq.init_rect(1,4), seq.init_rect(1,3)];
-    params.wsize[0] = init_rect[3];
-    params.wsize[1] = init_rect[2];
-    params.init_pos[0] = init_rect[1] + floor(params.wsize[0]/2);
-    params.init_pos[1] = init_rect[0] + floor(params.wsize[1]/2);
+    params.wsize[0] = seq.init_rect[3];
+    params.wsize[1] = seq.init_rect[2];
+    params.init_pos[0] = seq.init_rect[1] + floor(params.wsize[0]/2);
+    params.init_pos[1] = seq.init_rect[0] + floor(params.wsize[1]/2);
     //notice : 讀取camera後沒有frame數，整合的時候需要更動
-//    params.s_frame = seq.s_frame;
-//    params.no_fram = seq.en_frame - seq.st_frame + 1;
-//    params.seq_st_frame = seq.st_frame;
-//    params.seq_en_frame = seq.en_frame;
+    params.s_frame = seq.s_frame;
+    params.no_fram = seq.en_frame - seq.st_frame + 1;
+    params.seq_st_frame = seq.st_frame;
+    params.seq_en_frame = seq.en_frame;
     //notice : end
 
     //%   ADMM parameters, # of iteration, and lambda- mu and betha are set in the main function.
@@ -216,37 +285,15 @@ void MainWindow::run_BACF(vector <double> init_rect,double lr,track_result &resu
     params.visualization = 1;
 
     //BACF_optimized(params,results);
-    //thread_BACF_tracking trackinThread(params);
-    //trackinThread.start(QThread::TimeCriticalPriority);
+    thread_BACF_tracking *trackinThread = new thread_BACF_tracking(params);
+    trackinThread->start(QThread::TimeCriticalPriority);
 
-
-    /*VideoCapture capture(0);
-    Size videoSize = Size((int)capture.get(CV_CAP_PROP_FRAME_WIDTH),(int)capture.get(CV_CAP_PROP_FRAME_HEIGHT));
-    VideoWriter writer;
-    writer.open("VideoTest.avi", CV_FOURCC('M', 'J', 'P', 'G'), 30, videoSize);
-    namedWindow("show image",0);
-
-    int time = 0;
-    while(true){
-        Mat frame;
-        capture >> frame;
-        if(time < 500){
-            writer.write(frame);
-            imshow("show image", frame);
-            waitKey(1);
-            time++;
-        }
-        else{
-            writer.~VideoWriter();
-            break;
-        }
-    }*/
 
 
 
 
     //-----------------------------------------------------------------------
-    cap.open("C:/Users/Eilin/Desktop/testVideo/test2_640x480.mp4");
+    /*cap.open("C:/Users/Eilin/Desktop/testVideo/test2_640x480.mp4");
     //cap.open(0);
     if (!cap.isOpened()) {
         cout << "video open fail!" << endl;
@@ -264,16 +311,13 @@ void MainWindow::run_BACF(vector <double> init_rect,double lr,track_result &resu
     //showTime();
     mytimer->start(33);                   //以1000毫秒為周期起動定時器
 
-    connect(mytimer,SIGNAL(timeout()),this,SLOT(VideoCaptureSlot()));
+    connect(mytimer,SIGNAL(timeout()),this,SLOT(VideoCaptureSlot()));*/
 
 
-    thread_BACF_tracking *trackinThread = new thread_BACF_tracking(params ,&Input_im ,&frameLock ,&isEnd ,&Write_num_frame ,&TrackingWriter);
-    trackinThread->start(QThread::TimeCriticalPriority);
+    //thread_BACF_tracking *trackinThread = new thread_BACF_tracking(params ,&Input_im ,&frameLock ,&isEnd ,&Write_num_frame ,&TrackingWriter);
+    //trackinThread->start(QThread::TimeCriticalPriority);
 
 
-
-    //Widget *w = new Widget(&Input_im ,&frameLock ,&isRun);
-    //w->start(QThread::TimeCriticalPriority);
 }
 
 void MainWindow::VideoCaptureSlot()
@@ -316,7 +360,7 @@ void MainWindow::VideoCaptureSlot()
                 }cout<<endl;
             }*/
             //cout<<root + "Serious/" +to_string(Write_num_frame)+".jpg"<<endl;
-            imwrite(root + "Serious/" +to_string(Write_num_frame)+".jpg",read_im.clone());
+            imwrite(root + "Serious/" +to_string(Write_num_frame)+".bmp",read_im.clone());
             //Mat im = imread(root  + "Serious/" +to_string(Write_num_frame)+".bmp");
             /*cout<<"read_im = "<<endl;
             for(int i = 0 ; i < im.rows ; i++){
@@ -329,7 +373,7 @@ void MainWindow::VideoCaptureSlot()
             //total.push_back(read_im);
             //cout<<"Input_size = "<<Input_im.size()<<endl;
             //cout<<"total = "<<total.size()<<endl;
-            cout << "videoCaptureSlot end" <<endl;
+            //cout << "videoCaptureSlot end" <<endl;
 
             frameLock = false;
 

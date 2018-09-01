@@ -1,4 +1,4 @@
-#include "resp_newton.h"
+﻿#include "resp_newton.h"
 //#include "bacf_optimized.h"
 #include "thread_bacf_tracking.h"
 #include "func.h"
@@ -122,6 +122,7 @@ void resp_newton(vector <Mat> &response,vector <Mat> &responsef,double iteration
         max_pos_y.at(i).push_back(temp1.clone());
 
 
+
 //    init_pos_x = permute(2*pi * trans_col / use_sz(2), [1 3 2]);
 //    max_pos_x = init_pos_x;
         Mat temp2(1,1,CV_32F);
@@ -129,6 +130,8 @@ void resp_newton(vector <Mat> &response,vector <Mat> &responsef,double iteration
         init_pos_x.at(i).push_back(temp2.clone());
         max_pos_x.at(i).push_back(temp2.clone());
     }
+
+
 
 
 //    % pre-compute complex exponential
@@ -162,6 +165,7 @@ void resp_newton(vector <Mat> &response,vector <Mat> &responsef,double iteration
 
 
 
+
 //    % gradient_step_size = gradient_step_size / prod(use_sz);
 //    ky2 = ky.*ky;
     Mat ky2;
@@ -171,7 +175,7 @@ void resp_newton(vector <Mat> &response,vector <Mat> &responsef,double iteration
 //    kx2 = kx.*kx;
     Mat kx2;
     kx2 = kx.mul(kx);
-
+clock_t start = clock();
 
 //    iter = 1;
     int iter = 1;
@@ -275,17 +279,17 @@ void resp_newton(vector <Mat> &response,vector <Mat> &responsef,double iteration
 
 //        % Compute new position using newtons method
 //        max_pos_y = max_pos_y - (H_xx .* grad_y - H_xy .* grad_x) ./ det_H;
-            Mat max_pos_y_temp = max_pos_y.at(n) - (H_xx.at(n).mul(grad_y.at(n)) - (H_xy.at(n).mul(grad_x.at(n))));
+            Mat max_pos_y_temp = H_xx.at(n).mul(grad_y.at(n)) - (H_xy.at(n).mul(grad_x.at(n)));
             Mat max_pos_y_div;
             divide(max_pos_y_temp,det_H.at(n),max_pos_y_div);
-            max_pos_y.at(n) = max_pos_y_div.clone();
+            max_pos_y.at(n) = max_pos_y.at(n) -  max_pos_y_div.clone();
 
 
 //        max_pos_x = max_pos_x - (H_yy .* grad_x - H_xy .* grad_y) ./ det_H;
-            Mat max_pos_x_temp = max_pos_x.at(n) - (H_yy.at(n).mul(grad_x.at(n)) - (H_xy.at(n).mul(grad_y.at(n))));
+            Mat max_pos_x_temp = H_yy.at(n).mul(grad_x.at(n)) - (H_xy.at(n).mul(grad_y.at(n)));
             Mat max_pos_x_div;
             divide(max_pos_x_temp,det_H.at(n),max_pos_x_div);
-            max_pos_x.at(n) = max_pos_x_div.clone();
+            max_pos_x.at(n) = max_pos_x.at(n) - max_pos_x_div.clone();
 
 
 //        % Evaluate maximum
@@ -300,19 +304,35 @@ void resp_newton(vector <Mat> &response,vector <Mat> &responsef,double iteration
 
         }
 
+//        for(int i = 0 ; i < 5 ; i++){cout<<"max_pos_y = " <<iter<<endl;
+//            cout<<max_pos_y.at(i)<<endl;
+//        }
+
+
+
+//        for(int i = 0 ; i < 5 ; i++){cout<<"max222 = " <<iter<<endl;
+//            cout<<max_pos_y.at(i)<<endl;
+//        }
+
+//        for(int i = 0 ; i < 5 ; i++){cout<<"exp_iky = " <<iter<<endl;
+//            cout<<exp_iky.at(i)<<endl;
+//        }
+
+//        imshow("im",response[0]);
+//        waitKey(0);
 
 //        iter = iter + 1;
         ++iter;
      }
 
+clock_t end = clock();
+cout<<"time = "<<(double)(end - start)/1000<<endl;
+//imshow("im",response[0]);
+//waitKey(0);
 
 //    max_response = 1 / prod(use_sz) * real(mtimesx(mtimesx(exp_iky, responsef, 'speed'), exp_ikx, 'speed'));
     vector <Mat> max_response;
     for(int n = 0 ; n < responsef.size() ; ++n){
-//        vector <Mat> mtimesx_temp1;
-//        mtimesx_temp1 = QT_mtimesx(exp_iky,responsef);
-//        vector <Mat> mtimesx_temp2;
-//        mtimesx_temp2 = QT_mtimesx(mtimesx_temp1,exp_ikx);
 
         Mat mtimesx_temp1;
         mtimesx_temp1 = QT_M_mtimesx(exp_iky.at(n),responsef.at(n));
@@ -325,6 +345,10 @@ void resp_newton(vector <Mat> &response,vector <Mat> &responsef,double iteration
         //cout<<max_response.at(n)<<endl;
     }
 
+
+//    for(int i = 0 ; i < 5 ; i++){cout<<"max = "<<endl;
+//        cout<<max_pos_y.at(sind)<<endl;
+//    }
 
 
 //    % check for scales that have not increased in score
@@ -360,13 +384,19 @@ void resp_newton(vector <Mat> &response,vector <Mat> &responsef,double iteration
         }
     }
 
+    /*for(int i = 0 ; i < 5 ; i++){cout<<"max = "<<endl;
+        cout<<max_pos_y.at(sind)<<endl;
+    }*/
 
 //    disp_row = (mod(max_pos_y(1,1,sind) + pi, 2*pi) - pi) / (2*pi) * use_sz(1);
-    disp_row = (mod(max_pos_y.at(sind).at<float>(0,0) + M_PI , 2 * M_PI) - M_PI) / (2 * M_PI) * use_sz[0];
+    disp_row = (mod(max_pos_y.at(sind).at<float>(0,0) + M_PI , 2 * M_PI) - M_PI) / (2 * M_PI) * (float)use_sz[0];
+    //cout<<"sind = "<<sind<<endl;
+    //cout<<"max_pos_y.at(sind) = "<<max_pos_y.at(sind).at<float>(0,0)<<endl;
+    //cout<<"mod = "<<mod(max_pos_y.at(sind).at<float>(0,0) + M_PI , 2 * M_PI)<<endl;
 
 
 //    disp_col = (mod(max_pos_x(1,1,sind) + pi, 2*pi) - pi) / (2*pi) * use_sz(2);
-    disp_col = (mod(max_pos_x.at(sind).at<float>(0,0) + M_PI , 2 * M_PI) - M_PI) / (2 * M_PI) * use_sz[1];
+    disp_col = (mod(max_pos_x.at(sind).at<float>(0,0) + M_PI , 2 * M_PI) - M_PI) / (2 * M_PI) * (float)use_sz[1];
 
     //END = clock();
     //cout<<"strat = "<<START<<",end = "<<END<<endl;
@@ -377,186 +407,43 @@ void resp_newton(vector <Mat> &response,vector <Mat> &responsef,double iteration
 
 }
 
-vector <Mat> QT_mtimesx(vector <Mat> &Vec_Src1 , vector <Mat> &Vec_Src2){
-    int row = Vec_Src1.at(0).rows;
-    int col = Vec_Src2.at(0).cols;
-    int same_length = Vec_Src1.at(0).cols;
-    int Num_dim = Vec_Src1.size();
-
-    //double START,END;
-    //START = clock();
-
-    vector <Mat> mul_ans;
-    for(int n = 0 ; n < Num_dim ; ++n){
-        vector <Mat> src1;
-        vector <Mat> src2;
-        vector <Mat> mul_result(2);
-
-        split(Vec_Src1.at(n),src1);
-        split(Vec_Src2.at(n),src2);
-
-        mul_result.at(0) = (src1.at(0) * src2.at(0)) - (src1.at(1) * src2.at(1));
-        mul_result.at(1) = (src1.at(0) * src2.at(1)) + (src1.at(1) * src2.at(0));
-
-        Mat result;
-        merge(mul_result,result);
-
-        mul_ans.push_back(result.clone());
-    }
-
-    //END = clock();
-    //cout<<"strat = "<<START<<",end = "<<END<<endl;
-    //cout  << "executing time : " << (END - START) / CLOCKS_PER_SEC << "s" << endl;
-
-
-    return mul_ans;
-}
 
 Mat QT_M_mtimesx(Mat &M_Src1 ,Mat &M_Src2){
-    vector <Mat> src1;
-    vector <Mat> src2;
-    vector <Mat> mul_result(2);
 
-    split(M_Src1,src1);
-    split(M_Src2,src2);
+    Mat ans = Mat::zeros(M_Src1.rows,M_Src2.cols,CV_32FC2);
+    int common_edge = M_Src1.cols;
 
-    mul_result.at(0) = (src1.at(0) * src2.at(0)) - (src1.at(1) * src2.at(1));
-    mul_result.at(1) = (src1.at(0) * src2.at(1)) + (src1.at(1) * src2.at(0));
+    ans.forEach<Pixel>
+            (
+              [&](Pixel &pixel, const int * position) -> void
+              {
 
-    Mat result;
-    merge(mul_result,result);
+                for(int i = 0 ; i < common_edge ; ++i){
+                    pixel.x += (M_Src1.at<Vec2f>(position[0],i)[0] * M_Src2.at<Vec2f>(i,position[1])[0] - M_Src1.at<Vec2f>(position[0],i)[1] * M_Src2.at<Vec2f>(i,position[1])[1]);
+                    pixel.y += (M_Src1.at<Vec2f>(position[0],i)[0] * M_Src2.at<Vec2f>(i,position[1])[1] + M_Src1.at<Vec2f>(position[0],i)[1] * M_Src2.at<Vec2f>(i,position[1])[0]);
+                }
 
-    return result;
+              }
+            );
+
+//    vector <Mat> src1;
+//    vector <Mat> src2;
+//    vector <Mat> mul_result(2);
+
+//    split(M_Src1,src1);
+//    split(M_Src2,src2);
+
+//    mul_result.at(0) = (src1.at(0) * src2.at(0)) - (src1.at(1) * src2.at(1));
+//    mul_result.at(1) = (src1.at(0) * src2.at(1)) + (src1.at(1) * src2.at(0));
+
+//    Mat result;
+//    merge(mul_result,result);
+
+    return ans;
 }
 
-vector <Mat> QT_bsxfun(Mat &Vec_Src1 , vector <Mat> &Vec_Src2){
-    int row = Vec_Src1.rows;
-    int col = Vec_Src1.cols;
-    int Num_dim = Vec_Src2.size();
-
-    //Vec_Src2是否只有一個元素
-    bool one_element = false;
-    if(Vec_Src2.at(0).rows == 1 && Vec_Src2.at(0).cols == 1){
-        one_element = true;
-    }
-
-    bool two_channel = false;
-    if(Vec_Src1.type() >= 8){
-        two_channel = true;
-    }
-//cout<<"row = "<<row<<" col = "<<col<<" Num_dim = "<<Num_dim<<endl;
-
-    //double START,END;
-    //START = clock();
-
-    vector <Mat> bsx_ans;
-    vector <Mat> src1;
-    split(Vec_Src1,src1);
-
-    if(one_element){
-        for(int n = 0 ; n < Num_dim ; ++n){
-            vector <Mat> bsx_result(2);
-            vector <Mat> src2;
-            split(Vec_Src2.at(n),src2);
-
-            //Vec_Src2 && Vec_Src1 -> 2 channels
-            if(Vec_Src2.at(n).type() >= 8 && two_channel){
-                bsx_result.at(0) = (src1.at(0).mul(src2.at(0).at<float>(0,0))) - (src1.at(1).mul(src2.at(1).at<float>(0,0)));
-                bsx_result.at(1) = (src1.at(0).mul(src2.at(1).at<float>(0,0))) + (src1.at(1).mul(src2.at(0).at<float>(0,0)));
-            }
-            //Vec_Src2 -> 1 channel , Vec_Src1 -> 2 channels
-            else if(Vec_Src2.at(n).type() < 8 && two_channel){
-                bsx_result.at(0) = src1.at(0).mul(src2.at(0).at<float>(0,0));
-                bsx_result.at(1) = src1.at(1).mul(src2.at(0).at<float>(0,0));
-            }
-            //Vec_Src2 -> 2 channels , Vec_Src1 -> 1 channel
-            else if(Vec_Src2.at(n).type() >= 8 && !two_channel){
-                bsx_result.at(0) = src1.at(0).mul(src2.at(0).at<float>(0,0));
-                bsx_result.at(1) = src1.at(0).mul(src2.at(1).at<float>(0,0));
-            }
-            //Vec_Src2 && Vec_Src1 -> 1 channels
-            else{
-                bsx_result.at(0) = src1.at(0).mul(src2.at(0).at<float>(0,0));
-                bsx_result.at(1) = src1.at(0).mul(0);
-            }
-
-            Mat result;
-            merge(bsx_result,result);
-
-            bsx_ans.push_back(result.clone());
-        }
-    }
-    else{
-        for(int n = 0 ; n < Num_dim ; ++n){
-            vector <Mat> bsx_result(2);
-            vector <Mat> src2;
-            split(Vec_Src2.at(n),src2);
-
-            //Vec_Src2 && Vec_Src1 -> 2 channels
-            if(Vec_Src2.at(n).type() >= 8 && two_channel){
-                bsx_result.at(0) = (src1.at(0).mul(src2.at(0))) - (src1.at(1).mul(src2.at(1)));
-                bsx_result.at(1) = (src1.at(0).mul(src2.at(1))) + (src1.at(1).mul(src2.at(0)));
-            }
-            //Vec_Src2 -> 1 channel , Vec_Src1 -> 2 channels
-            else if(Vec_Src2.at(n).type() < 8 && two_channel){
-                bsx_result.at(0) = src1.at(0).mul(src2.at(0));
-                bsx_result.at(1) = src1.at(1).mul(src2.at(0));
-            }
-            //Vec_Src2 -> 2 channels , Vec_Src1 -> 1 channel
-            else if(Vec_Src2.at(n).type() >= 8 && !two_channel){
-                bsx_result.at(0) = src1.at(0).mul(src2.at(0));
-                bsx_result.at(1) = src1.at(0).mul(src2.at(1));
-            }
-            //Vec_Src2 && Vec_Src1 -> 1 channels
-            else{
-                bsx_result.at(0) = src1.at(0).mul(src2.at(0));
-                bsx_result.at(1) = src1.at(0).mul(0);
-            }
 
 
-            Mat result;
-            merge(bsx_result,result);
-
-            bsx_ans.push_back(result.clone());
-
-        }
-    }
-
-    //END = clock();
-    //cout<<"strat = "<<START<<",end = "<<END<<endl;
-    //cout  << "executing time : " << (END - START) / CLOCKS_PER_SEC << "s" << endl;
-
-    return bsx_ans;
-}
-
-vector <Mat> QT_exp(vector <Mat> &Vec_Src){
-    int row = Vec_Src.at(0).rows;
-    int col = Vec_Src.at(0).cols;
-    int Num_dim = Vec_Src.size();
-
-    vector <Mat> exp_ans;
-    for(int n = 0 ; n < Num_dim ; ++n){
-        vector <Mat> src;
-
-        split(Vec_Src.at(n),src);
-
-        Mat mat_ans(row,col,CV_32FC2);
-
-        Mat exp_real;
-        exp(src.at(0),exp_real);
-        //cout<<"exp_real.type() = "<<exp_real.type()<<endl;
-        for(int i = 0 ; i < row ; ++i){
-            for(int j = 0 ; j < col ; ++j){
-                mat_ans.at<Vec2f>(i,j)[0] = exp_real.at<float>(i,j)*cos(src.at(1).at<float>(i,j));
-                mat_ans.at<Vec2f>(i,j)[1] = exp_real.at<float>(i,j)*sin(src.at(1).at<float>(i,j));
-            }
-        }
-
-        exp_ans.push_back(mat_ans.clone());
-
-    }
-    return exp_ans;
-}
 
 Mat QT_M_exp(Mat &M_Src){
     int row = M_Src.rows;
@@ -570,12 +457,26 @@ Mat QT_M_exp(Mat &M_Src){
 
     Mat exp_real;
     exp(src.at(0),exp_real);
-    for(int i = 0 ; i < row ; ++i){
-        for(int j = 0 ; j < col ; ++j){
-            mat_ans.at<Vec2f>(i,j)[0] = exp_real.at<float>(i,j)*cos(src.at(1).at<float>(i,j));
-            mat_ans.at<Vec2f>(i,j)[1] = exp_real.at<float>(i,j)*sin(src.at(1).at<float>(i,j));
-        }
-    }
+
+    mat_ans.forEach<Pixel>
+            (
+              [&](Pixel &pixel, const int * position) -> void
+              {
+                pixel.x = exp_real.at<float>(position[0],position[1])*cos(src.at(1).at<float>(position[0],position[1]));
+                pixel.y = exp_real.at<float>(position[0],position[1])*sin(src.at(1).at<float>(position[0],position[1]));
+
+                //add_pixel(pixel);
+              }
+            );
+
+
+//    for(int i = 0 ; i < row ; ++i){
+//        for(int j = 0 ; j < col ; ++j){
+//            mat_ans.at<Vec2f>(i,j)[0] = exp_real.at<float>(i,j)*cos(src.at(1).at<float>(i,j));
+//            mat_ans.at<Vec2f>(i,j)[1] = exp_real.at<float>(i,j)*sin(src.at(1).at<float>(i,j));
+//        }
+//    }
+
     return mat_ans;
 
 }

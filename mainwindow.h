@@ -38,6 +38,11 @@ using namespace std;
 //extern struct image_info seq;
 //extern vector <vector <double> > ground_truth;
 
+// Define a pixel
+typedef Point_<float> Pixel;
+
+void add_pixel(Pixel &pixel);
+
 class image_info{
 public:
     int len=0;
@@ -82,7 +87,7 @@ struct cell{
 class parameters{
 public:
     //delete
-    //string video_path;
+    string video_path;
 
     struct para_features_struct t_features;
     struct cell t_global;
@@ -99,10 +104,10 @@ public:
     double init_pos[2];
 
     //notice : 讀取camera後沒有frame數，整合的時候需要更動
-    //vector <string> s_frame;
-    //int no_fram;
-    //int seq_st_frame;
-    //int seq_en_frame;
+    vector <string> s_frame;
+    int no_fram;
+    int seq_st_frame;
+    int seq_en_frame;
     //notice : end
 
     int admm_iterations;
@@ -170,7 +175,7 @@ private:
     int getdir(string dir, vector<string> &files);
 
 
-    void run_BACF(vector <double> init_rect,double lr,track_result &results);
+    void run_BACF(image_info &seq,double lr,track_result &results);
 };
 
 

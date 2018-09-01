@@ -1,4 +1,4 @@
-#include <opencv2/opencv.hpp>
+﻿#include <opencv2/opencv.hpp>
 #include "get_fhog.h"
 #include "piotr_fhog/fhog.hpp"
 //#include "FHOG-master/pdollar/fhog.h"
@@ -28,8 +28,10 @@ void get_fhog(vector <Mat> im,pair<string,hog_parameters> fparam,struct cell gpa
         //--hog_image = fhog(single(im(:,:,:,k)), gparam.cell_size, fparam.nOrients);
         //color轉gray //*****可能需要改善fhog的方法*****//
         Mat im_temp;
-        cvtColor(im[k],im_temp,cv::COLOR_RGB2GRAY);
+        cvtColor(im[k],im_temp,cv::COLOR_BGR2GRAY);
         im_temp.convertTo(im_temp,CV_32F);
+
+
         //im[k].convertTo(im_temp,CV_32FC3);
         //cvtColor(im_temp,im_temp,cv::COLOR_RGB2GRAY);
 //        cout<<"im = "<<endl;
@@ -41,6 +43,8 @@ void get_fhog(vector <Mat> im,pair<string,hog_parameters> fparam,struct cell gpa
 
         // get hog features
         vector <Mat> hog_image = FHoG::extract(im_temp, 2, gparam.cell_size.second, 9);
+
+
         //vector <Mat> hog_image = FHoG::extract(im_temp);
 //        cout<<hog_image.at(0)<<endl;
 //        imshow("im",im[k]);

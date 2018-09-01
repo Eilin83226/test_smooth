@@ -6,11 +6,12 @@
 #include "resp_newton.h"
 //#include "bacf_optimized.h"
 #include "func.h"
+#include <fstream>
 
 #define FPS 15
 
-thread_BACF_tracking::thread_BACF_tracking(parameters &tparams ,queue <Mat> *tInput_im ,bool *tFrameLock ,bool *tIsEnd ,int *tWrite_num_frame ,VideoWriter *tTrackingWriter):params(tparams),Input_im(tInput_im),FrameLock(tFrameLock),isEnd(tIsEnd),Write_num_frame(tWrite_num_frame),TrackingWriter(tTrackingWriter){
-
+thread_BACF_tracking::thread_BACF_tracking(parameters &tparams):params(tparams)
+{
     //%   Setting parameters for local use.
     double search_area_scale = params.search_area_scale;
     double output_sigma_factor = params.output_sigma_factor;
@@ -278,39 +279,16 @@ thread_BACF_tracking::thread_BACF_tracking(parameters &tparams ,queue <Mat> *tIn
 
 }
 
-/*void thread_BACF_tracking::showTime()
-{ qDebug() << "ccvcvcvcvcv";
-    qDebug() << "text";
-}
 
-void thread_BACF_tracking::VideoCaptureSlot(){
-cout<<"videoslot "<<endl;
-    for(int i = 0 ; i < 50; ++i){
-        if(!frameLock){
-            frameLock = true;
-            cout << "videoCaptureSlot start" <<endl;
-            cap >> read_im;
-            cout << "videoCaptureSlot end" <<endl;
+void thread_BACF_tracking::run(){
 
-            frameLock = false;
-            if( read_im.empty()){
-                cout << "End." <<endl;
-                isRun = false;
-
-                return;
-            }
-            imshow("im",read_im);
-            waitKey(1);
-            cout<<"isRun = "<<isRun<<endl;
-            isRun = true;
-            break;
-        }
+    fstream fp;
+    fp.open("BundingBox.txt",ios::out);
+    if(!fp){
+        cout<<"Fail to open file: BundingBox.txt"<<endl;
     }
 
 
-}*/
-
-void thread_BACF_tracking::run(){
     //-- time = 0;
     double time = 0;
 
@@ -323,68 +301,28 @@ void thread_BACF_tracking::run(){
 
 
     //可delete
-    //double loop_frame = 1;
+    double loop_frame = 1;
 
 //cout<<"isRun1 = "<<isRun<<endl;
-    while(isRun){
-
-        if(*Write_num_frame == 0 && !*isEnd){
-            cout << "No Frames !" << endl;
-            waitKey(1000/FPS);
-            continue;
-        }
-        else if(*Write_num_frame == Read_num_frame && *isEnd){
-            cout << "Finished !" << endl;
-            //刪除資料夾，RemoveDirectoryA只適用在windows上，且只能刪除空的Directory
-            bool del_Dir = RemoveDirectoryA((root + file_name).c_str());
-            if(del_Dir == true){
-                cout << "Frame Directory is removed !" << endl;
-            }
-            else{
-                cout << "Frame Directory is failed to delete !" << endl;;
-            }
-            //TrackingWriter->~VideoWriter();
-            break;
-        }
-
+    for(int frame_num = 1 ; frame_num <= params.s_frame.size() ; ++frame_num){
         //%load image
-        if(Read_num_frame < *Write_num_frame && !*FrameLock){
-            *FrameLock = true;
-            Read_num_frame++;
-            read_im = imread(root + file_name + to_string(Read_num_frame) + ".jpg");
+        try{
+            read_im = imread(root + "/480p_test5_front/" + params.s_frame[frame_num-1]);
             resize(read_im,threadFrame,Size(width,height));
-            //threadFrame = read_im.clone();
-            //-- 成功讀到Frame之後便刪除
-            int remove_status = remove((root + file_name + to_string(Read_num_frame) + ".jpg").c_str());
-
-            *FrameLock = false;
         }
-        else{
-            continue;
+        catch(exception& e){
+            try{
+                read_im = imread(params.s_frame[frame_num-1]);
+                resize(read_im,threadFrame,Size(width,height));
+            }
+            catch(exception& e){
+                read_im = imread(root + "/" + params.s_frame[frame_num-1]);
+                resize(read_im,threadFrame,Size(width,height));
+            }
         }
-
-        /*if(Input_im->size() == 0 && !*isEnd){
-            cout << "Input_im is empty" << endl;
-            waitKey(1000/FPS);
-            continue;
+        if(read_im.channels() > 1 && colorImage == false){
+            cvtColor(read_im,threadFrame,CV_BGR2GRAY);
         }
-        //else if(Input_im->size() == 0 && *isEnd){
-        else if(frame_num == Input_im->size()){
-            break;
-        }
-
-        if(!*FrameLock){
-            *FrameLock = true;
-            cout<<"tracking_input_size = "<<Input_im->size()<<endl;
-            Input_im->front().copyTo(read_im);
-            Input_im->front().copyTo(threadFrame);
-            //resize(threadFrame,threadFrame,Size(width,height));
-            Input_im->pop();
-            //Input_im->erase(Input_im->begin());
-            *FrameLock = false;
-        }else{
-            continue;
-        }*/
 
         //紀錄起始時間
         //-- tic();
@@ -571,6 +509,7 @@ void thread_BACF_tracking::run(){
 //                    cout<<disp_row<<","<<featureRatio<<","<<currentScaleFactor<<","<<scaleFactors.at(sind)<<","<<sind<<endl;
                     translation_vec.push_back(round(disp_row * featureRatio * currentScaleFactor * scaleFactors.at(sind)));
                     translation_vec.push_back(round(disp_col * featureRatio * currentScaleFactor * scaleFactors.at(sind)));
+                    fp<<loop_frame<<". disp_row = "<<disp_row<<" ,disp_col = "<<disp_col<<" ,featureRatio = "<<featureRatio<<" ,currentScaleFactor = "<<currentScaleFactor<<" ,sind = "<<sind<<endl;
             }
 
 
@@ -600,6 +539,8 @@ void thread_BACF_tracking::run(){
 //            cout<<"translation_vec = ("<<translation_vec[0]<<","<<translation_vec[1]<<")"<<endl;
             pos[0] = pos[0] + translation_vec.at(0);
             pos[1] = pos[1] + translation_vec.at(1);
+            fp<<"   pos = "<<pos[0]<<","<<pos[1]<<endl;
+            fp<<"   translation_vec = "<<translation_vec.at(0)<<","<<translation_vec.at(1)<<endl;
 //            cout<<"pos = ("<<pos[0]<<","<<pos[1]<<")"<<endl;
 //            cout<<"------------------------------"<<endl;
 //            imshow("im",im);
@@ -634,6 +575,15 @@ void thread_BACF_tracking::run(){
             }
         }
 
+
+//        cout<<"pixels[0] = "<<xf.at(0).size()<<","<<xf.at(0).type()<<endl;
+//        for(int i = 0 ; i < xf.at(0).rows ; ++i){
+//            for(int j = 0 ; j < xf.at(0).cols ; ++j){
+//                cout<<xf.at(0).at<Vec2f>(i,j)<<" ";
+//            }cout<<endl;
+//        }
+//        imshow("pixels",feature_pixels_out.at(0).at(0));
+//        waitKey(0);
 
 
         if(isFirstFrame){
@@ -797,6 +747,15 @@ void thread_BACF_tracking::run(){
             //-- mu = min(betha * mu, mumax);
             mu = min(betha * mu, mumax);
 
+//            cout<<"g_f[0] = "<<g_f.at(0).size()<<","<<g_f.at(0).type()<<endl;
+//            for(int i = 0 ; i < g_f.at(0).rows ; ++i){
+//                for(int j = 0 ; j < g_f.at(0).cols ; ++j){
+//                    cout<<g_f.at(0).at<Vec2f>(i,j)<<" ";
+//                }cout<<endl;
+//            }
+//            imshow("pixels",feature_pixels_out.at(0).at(0));
+//            waitKey(0);
+
 
             //-- i = i+1;
             ++i;
@@ -804,10 +763,12 @@ void thread_BACF_tracking::run(){
         }
 
 
+
         //-- target_sz = floor(base_target_sz * currentScaleFactor);
         target_sz[0] = floor(base_target_sz[0] * currentScaleFactor);
         target_sz[1] = floor(base_target_sz[1] * currentScaleFactor);
-
+        //cout<<loop_frame<<". currentScalesFactor = "<<currentScaleFactor<<endl;
+        //cout<<"target_sz = "<<target_sz[0]<<","<<target_sz[1]<<endl;
 
 
 
@@ -827,8 +788,13 @@ void thread_BACF_tracking::run(){
 //                rect_position_vis = [pos([2,1]) - target_sz([2,1])/2, target_sz([2,1])];
             double rect_position_vis[4] = {(pos[1] - target_sz[1]/2) , (pos[0] - target_sz[0]/2) , target_sz[1] , target_sz[0]};
             //cout<<"loop_frame = "<<loop_frame<<endl;
-            //cout<<"rect_position_vis = "<<rect_position_vis[0]<<","<<rect_position_vis[1]<<","<<rect_position_vis[2]<<","<<rect_position_vis[3]<<endl;
-
+            //cout<<loop_frame<<". rect_position_vis = "<<rect_position_vis[0]<<","<<rect_position_vis[1]<<","<<rect_position_vis[2]<<","<<rect_position_vis[3]<<endl;
+            fp<<loop_frame<<". rect_position_vis = "<<rect_position_vis[0]<<","<<rect_position_vis[1]<<","<<rect_position_vis[2]<<","<<rect_position_vis[3]<<endl;
+            //fp<<"   currentScalesFactor = "<<currentScaleFactor<<endl;
+            //fp<<"   target_sz = "<<target_sz[0]<<","<<target_sz[1]<<endl;
+            fp<<endl;
+            //imshow("pixels",feature_pixels_out.at(0).at(0));
+            //waitKey(0);
 
 //                im_to_show = double(im)/255;
             Mat im_to_show;
@@ -859,7 +825,7 @@ void thread_BACF_tracking::run(){
                 //TrackingWriter->write(read_im);
                 //cout<<im_to_show.size()<<endl;
                 imshow("Tracking",read_im);
-                waitKey(1);
+                waitKey(0);
 
             }
             else{
@@ -876,9 +842,12 @@ void thread_BACF_tracking::run(){
         }
 
 
-        //++loop_frame;
+        ++loop_frame;
 
     }
+
+    fp.close();
+    cout<<"finished"<<endl;
 
 }
 

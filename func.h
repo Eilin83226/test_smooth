@@ -1,4 +1,4 @@
-#ifndef FUNC_H
+﻿#ifndef FUNC_H
 #define FUNC_H
 
 #include <string.h>
@@ -14,17 +14,15 @@
 #include <errno.h>
 #include <queue>
 
-#define M_PI 3.14159265358979323846
+#define M_PI 3.1416
 
 using namespace cv;
 using namespace std;
 
-//template<typename ty>
-//void circshift(ty &out, const ty &in, int xdim, int ydim, int xshift, int yshift);
-//void fft2(const Mat &src, Mat &Fourier);
-//void hanning(int N, vector <float> &ans);
-//void fftshift(Mat &out);
-//void circshift(Mat &out, const Point &delta);
+// Define a pixel
+typedef Point_<float> Pixel;
+
+
 vector <Mat> QT_conj(vector <Mat> &Vec_Src);
 Mat QT_conj_m(Mat &src);
 vector <Mat> QT_vec_mul_vec(vector <Mat> &Vec_Src1 , vector <Mat> &Vec_Src2);
